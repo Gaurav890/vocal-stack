@@ -1,0 +1,31 @@
+# Source files
+src/
+tests/
+*.test.ts
+
+# Config files
+*.config.ts
+*.config.js
+tsconfig.json
+biome.json
+vitest.config.ts
+
+# Development
+.github/
+.changeset/
+coverage/
+.vscode/
+.idea/
+
+# Environment
+.env*
+
+# Build artifacts
+*.tsbuildinfo
+
+# Documentation (keep only README.md in package)
+context.md
+
+# Git
+.git/
+.gitignore
