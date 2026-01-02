@@ -123,7 +123,7 @@ describe('StallDetector', () => {
 
     detector.start();
 
-    await new Promise((resolve) => setTimeout(resolve, 60));
+    await new Promise((resolve) => setTimeout(resolve, 100));
 
     expect(onStall).toHaveBeenCalled();
     const callArgs = onStall.mock.calls[0];

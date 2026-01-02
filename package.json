@@ -1,32 +1,32 @@
 {
   "name": "vocal-stack",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "High-performance utility library for Voice AI agents - text sanitization, flow control, and latency monitoring",
   "type": "module",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.js"
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
     },
     "./sanitizer": {
       "types": "./dist/sanitizer/index.d.ts",
-      "import": "./dist/sanitizer/index.mjs",
-      "require": "./dist/sanitizer/index.js"
+      "import": "./dist/sanitizer/index.js",
+      "require": "./dist/sanitizer/index.cjs"
     },
     "./flow": {
       "types": "./dist/flow/index.d.ts",
-      "import": "./dist/flow/index.mjs",
-      "require": "./dist/flow/index.js"
+      "import": "./dist/flow/index.js",
+      "require": "./dist/flow/index.cjs"
     },
     "./monitor": {
       "types": "./dist/monitor/index.d.ts",
-      "import": "./dist/monitor/index.mjs",
-      "require": "./dist/monitor/index.js"
+      "import": "./dist/monitor/index.js",
+      "require": "./dist/monitor/index.cjs"
     }
   },
-  "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "files": [
     "dist",
