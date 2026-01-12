@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>vocal-stack - Text Sanitizer Demo</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    .header {
+      text-align: center;
+      color: white;
+      margin-bottom: 40px;
+    }
+
+    .header h1 {
+      font-size: 2.5em;
+      margin-bottom: 10px;
+    }
+
+    .header p {
+      font-size: 1.2em;
+      opacity: 0.9;
+    }
+
+    .demo-card {
+      background: white;
+      border-radius: 12px;
+      padding: 30px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      margin-bottom: 20px;
+    }
+
+    .section {
+      margin-bottom: 25px;
+    }
+
+    .section-title {
+      font-size: 1.1em;
+      font-weight: 600;
+      margin-bottom: 10px;
+      color: #333;
+    }
+
+    textarea {
+      width: 100%;
+      padding: 15px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-family: 'Monaco', 'Courier New', monospace;
+      font-size: 14px;
+      resize: vertical;
+      transition: border-color 0.3s;
+    }
+
+    textarea:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    .input-area {
+      min-height: 150px;
+    }
+
+    .output-area {
+      min-height: 100px;
+      background: #f5f5f5;
+      color: #333;
+    }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    .btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .btn-primary {
+      background: #667eea;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #5568d3;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-secondary {
+      background: #e0e0e0;
+      color: #333;
+    }
+
+    .btn-secondary:hover {
+      background: #d0d0d0;
+    }
+
+    .checkbox-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      padding: 8px 12px;
+      background: #f5f5f5;
+      border-radius: 6px;
+      transition: background 0.3s;
+    }
+
+    .checkbox-label:hover {
+      background: #e8e8e8;
+    }
+
+    .checkbox-label input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 15px;
+      padding: 20px;
+      background: #f8f9fa;
+      border-radius: 8px;
+    }
+
+    .stat {
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 2em;
+      font-weight: bold;
+      color: #667eea;
+    }
+
+    .stat-label {
+      font-size: 0.9em;
+      color: #666;
+      margin-top: 5px;
+    }
+
+    .examples {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .example-btn {
+      padding: 8px 16px;
+      background: #f0f0f0;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all 0.3s;
+    }
+
+    .example-btn:hover {
+      background: #667eea;
+      color: white;
+      border-color: #667eea;
+    }
+
+    .footer {
+      text-align: center;
+      color: white;
+      margin-top: 30px;
+      opacity: 0.8;
+    }
+
+    .footer a {
+      color: white;
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🎙️ vocal-stack</h1>
+      <p>Text Sanitizer Demo - Clean LLM output for TTS</p>
+    </div>
+
+    <div class="demo-card">
+      <div class="section">
+        <div class="section-title">Select Sanitization Rules:</div>
+        <div class="checkbox-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="rule-markdown" checked>
+            <span>Markdown</span>
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" id="rule-urls" checked>
+            <span>URLs</span>
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" id="rule-code-blocks" checked>
+            <span>Code Blocks</span>
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" id="rule-punctuation" checked>
+            <span>Punctuation</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Input Text (with markdown, URLs, etc.):</div>
+        <div class="examples">
+          <button class="example-btn" onclick="loadExample('markdown')">Markdown Example</button>
+          <button class="example-btn" onclick="loadExample('urls')">URLs Example</button>
+          <button class="example-btn" onclick="loadExample('code')">Code Example</button>
+          <button class="example-btn" onclick="loadExample('mixed')">Mixed Example</button>
+        </div>
+        <textarea id="input" class="input-area" placeholder="Enter text with markdown, URLs, code blocks...">## Welcome to vocal-stack!
+
+This is a **powerful** library for _voice AI_ agents.
+
+Check out [our docs](https://github.com/vocal-stack) for more info.
+
+Here's some code:
+```javascript
+const sanitizer = new SpeechSanitizer();
+```
+
+Visit https://example.com to learn more!!!</textarea>
+      </div>
+
+      <div class="controls">
+        <button class="btn btn-primary" onclick="sanitize()">🧹 Sanitize Text</button>
+        <button class="btn btn-secondary" onclick="clearAll()">Clear</button>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Output (TTS-ready):</div>
+        <textarea id="output" class="output-area" readonly placeholder="Sanitized output will appear here..."></textarea>
+      </div>
+
+      <div class="stats" id="stats" style="display: none;">
+        <div class="stat">
+          <div class="stat-value" id="stat-chars-removed">0</div>
+          <div class="stat-label">Characters Removed</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" id="stat-original">0</div>
+          <div class="stat-label">Original Length</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" id="stat-cleaned">0</div>
+          <div class="stat-label">Cleaned Length</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" id="stat-reduction">0%</div>
+          <div class="stat-label">Size Reduction</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <p>
+        Try vocal-stack: <a href="https://www.npmjs.com/package/vocal-stack" target="_blank">npm install vocal-stack</a>
+      </p>
+    </div>
+  </div>
+
+  <script type="module" src="./index.js"></script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+{
+  "name": "vocal-stack-example-openai-tts",
+  "version": "1.0.0",
+  "description": "Real OpenAI TTS integration with vocal-stack",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "vocal-stack": "^1.0.1",
+    "openai": "^4.0.0"
+  }
+}

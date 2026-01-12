@@ -1,0 +1,15 @@
+{
+  "name": "vocal-stack-example-custom-voice-agent",
+  "version": "1.0.0",
+  "description": "Complete custom voice agent implementation",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "agent": "node agent.js"
+  },
+  "dependencies": {
+    "vocal-stack": "^1.0.1",
+    "openai": "^4.0.0"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "name": "vocal-stack-example-elevenlabs-tts",
+  "version": "1.0.0",
+  "description": "Real ElevenLabs TTS integration with vocal-stack",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "vocal-stack": "^1.0.1",
+    "elevenlabs": "^0.8.0",
+    "openai": "^4.0.0"
+  }
+}

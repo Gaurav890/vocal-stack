@@ -1,0 +1,17 @@
+{
+  "name": "vocal-stack-demo-full-pipeline",
+  "version": "1.0.0",
+  "description": "Interactive demo showing complete vocal-stack pipeline",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "vocal-stack": "^1.0.1"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0"
+  }
+}

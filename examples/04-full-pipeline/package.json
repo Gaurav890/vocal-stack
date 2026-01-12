@@ -1,0 +1,13 @@
+{
+  "name": "vocal-stack-example-full-pipeline",
+  "version": "1.0.0",
+  "description": "Complete pipeline example combining all three modules",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "vocal-stack": "^1.0.1"
+  }
+}

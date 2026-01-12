@@ -1,0 +1,13 @@
+{
+  "name": "vocal-stack-example-monitoring",
+  "version": "1.0.0",
+  "description": "Example of latency monitoring and performance tracking",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "vocal-stack": "^1.0.1"
+  }
+}

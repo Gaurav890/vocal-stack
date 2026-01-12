@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>vocal-stack - Flow Control Demo</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    .header {
+      text-align: center;
+      color: white;
+      margin-bottom: 40px;
+    }
+
+    .header h1 {
+      font-size: 2.5em;
+      margin-bottom: 10px;
+    }
+
+    .header p {
+      font-size: 1.2em;
+      opacity: 0.9;
+    }
+
+    .demo-card {
+      background: white;
+      border-radius: 12px;
+      padding: 30px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      margin-bottom: 20px;
+    }
+
+    .section {
+      margin-bottom: 25px;
+    }
+
+    .section-title {
+      font-size: 1.1em;
+      font-weight: 600;
+      margin-bottom: 10px;
+      color: #333;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .control-group label {
+      font-size: 0.9em;
+      color: #666;
+      font-weight: 500;
+    }
+
+    .control-group input,
+    .control-group select {
+      padding: 10px;
+      border: 2px solid #e0e0e0;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    .control-group input:focus,
+    .control-group select:focus {
+      outline: none;
+      border-color: #f5576c;
+    }
+
+    .btn {
+      padding: 14px 28px;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      width: 100%;
+    }
+
+    .btn-primary {
+      background: #f5576c;
+      color: white;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: #e04858;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(245, 87, 108, 0.4);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: #e0e0e0;
+      color: #333;
+    }
+
+    .btn-secondary:hover {
+      background: #d0d0d0;
+    }
+
+    .output-box {
+      background: #f8f9fa;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 20px;
+      min-height: 150px;
+      font-family: 'Monaco', 'Courier New', monospace;
+      font-size: 14px;
+      line-height: 1.8;
+      position: relative;
+    }
+
+    .output-box.active {
+      border-color: #f5576c;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        box-shadow: 0 0 0 0 rgba(245, 87, 108, 0.4);
+      }
+      50% {
+        box-shadow: 0 0 0 10px rgba(245, 87, 108, 0);
+      }
+    }
+
+    .chunk {
+      display: inline;
+      padding: 2px 4px;
+      margin: 2px;
+      border-radius: 3px;
+      animation: fadeIn 0.3s;
+    }
+
+    .chunk-text {
+      background: #e3f2fd;
+      color: #1976d2;
+    }
+
+    .chunk-filler {
+      background: #fff3e0;
+      color: #f57c00;
+      font-weight: bold;
+      padding: 4px 8px;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(-5px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .timeline {
+      background: #f8f9fa;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 20px;
+      min-height: 100px;
+      position: relative;
+      overflow-x: auto;
+    }
+
+    .timeline-bar {
+      display: flex;
+      gap: 2px;
+      min-height: 60px;
+      align-items: flex-end;
+    }
+
+    .timeline-item {
+      min-width: 40px;
+      background: #e3f2fd;
+      border-radius: 4px 4px 0 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      color: #1976d2;
+      padding: 5px;
+      text-align: center;
+      transition: all 0.3s;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .timeline-item:hover {
+      transform: translateY(-5px);
+    }
+
+    .timeline-item.filler {
+      background: #fff3e0;
+      color: #f57c00;
+      font-weight: bold;
+    }
+
+    .timeline-item.stall {
+      background: #ffebee;
+      color: #c62828;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 15px;
+      padding: 20px;
+      background: #f8f9fa;
+      border-radius: 8px;
+    }
+
+    .stat {
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 2em;
+      font-weight: bold;
+      color: #f5576c;
+    }
+
+    .stat-label {
+      font-size: 0.85em;
+      color: #666;
+      margin-top: 5px;
+    }
+
+    .info-box {
+      background: #e3f2fd;
+      border-left: 4px solid #1976d2;
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+    }
+
+    .info-box p {
+      color: #1565c0;
+      line-height: 1.6;
+      margin: 0;
+    }
+
+    .footer {
+      text-align: center;
+      color: white;
+      margin-top: 30px;
+      opacity: 0.8;
+    }
+
+    .footer a {
+      color: white;
+      text-decoration: underline;
+    }
+
+    .legend {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-top: 15px;
+      padding: 15px;
+      background: white;
+      border-radius: 6px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .legend-color {
+      width: 24px;
+      height: 24px;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>⚡ vocal-stack</h1>
+      <p>Flow Control Demo - Smart Filler Injection</p>
+    </div>
+
+    <div class="demo-card">
+      <div class="info-box">
+        <p>
+          <strong>How it works:</strong> When an LLM stream stalls (takes too long),
+          vocal-stack injects natural fillers like "um" or "let me think" to keep the conversation flowing.
+          Fillers are <strong>only injected before the first chunk</strong> to sound natural!
+        </p>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Configuration:</div>
+        <div class="controls">
+          <div class="control-group">
+            <label>Stall Threshold (ms)</label>
+            <input type="number" id="stall-threshold" value="1000" min="100" max="5000" step="100">
+          </div>
+          <div class="control-group">
+            <label>Enable Fillers</label>
+            <select id="enable-fillers">
+              <option value="true" selected>Yes</option>
+              <option value="false">No</option>
+            </select>
+          </div>
+          <div class="control-group">
+            <label>Chunk Delay (ms)</label>
+            <input type="number" id="chunk-delay" value="200" min="50" max="2000" step="50">
+          </div>
+          <div class="control-group">
+            <label>Initial Stall (ms)</label>
+            <input type="number" id="initial-stall" value="1500" min="0" max="5000" step="100">
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <button class="btn btn-primary" id="start-btn" onclick="startDemo()">
+          ▶️ Start Simulation
+        </button>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Live Output:</div>
+        <div class="output-box" id="output"></div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Timeline:</div>
+        <div class="timeline">
+          <div class="timeline-bar" id="timeline"></div>
+          <div class="legend">
+            <div class="legend-item">
+              <div class="legend-color" style="background: #e3f2fd;"></div>
+              <span>Text Chunk</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color" style="background: #fff3e0;"></div>
+              <span>Filler</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color" style="background: #ffebee;"></div>
+              <span>Stall</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stats" id="stats" style="display: none;">
+        <div class="stat">
+          <div class="stat-value" id="stat-chunks">0</div>
+          <div class="stat-label">Chunks</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" id="stat-fillers">0</div>
+          <div class="stat-label">Fillers</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" id="stat-stalls">0</div>
+          <div class="stat-label">Stalls</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" id="stat-duration">0s</div>
+          <div class="stat-label">Duration</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" id="stat-ttft">0ms</div>
+          <div class="stat-label">TTFT</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <p>
+        Try vocal-stack: <a href="https://www.npmjs.com/package/vocal-stack" target="_blank">npm install vocal-stack</a>
+      </p>
+    </div>
+  </div>
+
+  <script type="module" src="./index.js"></script>
+</body>
+</html>

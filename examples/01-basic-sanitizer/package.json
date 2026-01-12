@@ -1,0 +1,13 @@
+{
+  "name": "vocal-stack-example-basic-sanitizer",
+  "version": "1.0.0",
+  "description": "Basic example of text sanitization for TTS",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "vocal-stack": "^1.0.1"
+  }
+}

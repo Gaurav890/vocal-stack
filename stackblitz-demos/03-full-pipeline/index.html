@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>vocal-stack - Full Pipeline Demo</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .header {
+      text-align: center;
+      color: white;
+      margin-bottom: 40px;
+    }
+
+    .header h1 {
+      font-size: 2.5em;
+      margin-bottom: 10px;
+    }
+
+    .header p {
+      font-size: 1.2em;
+      opacity: 0.9;
+    }
+
+    .demo-card {
+      background: white;
+      border-radius: 12px;
+      padding: 30px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      margin-bottom: 20px;
+    }
+
+    .pipeline-visual {
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      padding: 30px;
+      background: #f8f9fa;
+      border-radius: 12px;
+      margin-bottom: 30px;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+
+    .pipeline-step {
+      text-align: center;
+      padding: 20px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      min-width: 120px;
+      transition: all 0.3s;
+    }
+
+    .pipeline-step.active {
+      transform: scale(1.1);
+      box-shadow: 0 4px 16px rgba(79, 172, 254, 0.5);
+      border: 2px solid #4facfe;
+    }
+
+    .pipeline-step-icon {
+      font-size: 2.5em;
+      margin-bottom: 10px;
+    }
+
+    .pipeline-step-label {
+      font-weight: 600;
+      color: #333;
+      font-size: 0.9em;
+    }
+
+    .pipeline-arrow {
+      font-size: 2em;
+      color: #999;
+    }
+
+    .section {
+      margin-bottom: 25px;
+    }
+
+    .section-title {
+      font-size: 1.2em;
+      font-weight: 600;
+      margin-bottom: 15px;
+      color: #333;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn {
+      padding: 14px 28px;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      width: 100%;
+    }
+
+    .btn-primary {
+      background: #4facfe;
+      color: white;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: #3a9be5;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(79, 172, 254, 0.4);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .output-section {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 25px;
+    }
+
+    @media (max-width: 768px) {
+      .output-section {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .output-box {
+      background: #f8f9fa;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 20px;
+      min-height: 150px;
+      font-family: 'Monaco', 'Courier New', monospace;
+      font-size: 13px;
+      line-height: 1.8;
+    }
+
+    .output-box h3 {
+      font-size: 1em;
+      margin-bottom: 10px;
+      color: #666;
+      font-family: -apple-system, sans-serif;
+    }
+
+    .chunk {
+      display: inline;
+      padding: 2px 4px;
+      margin: 2px;
+      border-radius: 3px;
+      animation: fadeIn 0.3s;
+    }
+
+    .chunk-text {
+      background: #e3f2fd;
+      color: #1976d2;
+    }
+
+    .chunk-filler {
+      background: #fff3e0;
+      color: #f57c00;
+      font-weight: bold;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 15px;
+      padding: 20px;
+      background: #f8f9fa;
+      border-radius: 8px;
+    }
+
+    .stat {
+      text-align: center;
+      padding: 15px;
+      background: white;
+      border-radius: 6px;
+    }
+
+    .stat-value {
+      font-size: 1.8em;
+      font-weight: bold;
+      color: #4facfe;
+    }
+
+    .stat-label {
+      font-size: 0.85em;
+      color: #666;
+      margin-top: 5px;
+    }
+
+    .info-box {
+      background: #e3f2fd;
+      border-left: 4px solid #4facfe;
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+    }
+
+    .info-box p {
+      color: #1565c0;
+      line-height: 1.6;
+      margin: 0;
+    }
+
+    .footer {
+      text-align: center;
+      color: white;
+      margin-top: 30px;
+      opacity: 0.8;
+    }
+
+    .footer a {
+      color: white;
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🚀 vocal-stack</h1>
+      <p>Full Pipeline Demo - All Three Modules Together</p>
+    </div>
+
+    <div class="demo-card">
+      <div class="info-box">
+        <p>
+          <strong>Complete Pipeline:</strong> This demo shows how all three vocal-stack modules work together.
+          LLM output (with markdown) → Text Sanitization → Flow Control (with fillers) → Performance Monitoring → Clean TTS-ready output!
+        </p>
+      </div>
+
+      <div class="pipeline-visual">
+        <div class="pipeline-step" id="step-llm">
+          <div class="pipeline-step-icon">🤖</div>
+          <div class="pipeline-step-label">LLM Stream</div>
+        </div>
+        <div class="pipeline-arrow">→</div>
+        <div class="pipeline-step" id="step-sanitizer">
+          <div class="pipeline-step-icon">🧹</div>
+          <div class="pipeline-step-label">Sanitizer</div>
+        </div>
+        <div class="pipeline-arrow">→</div>
+        <div class="pipeline-step" id="step-flow">
+          <div class="pipeline-step-icon">⚡</div>
+          <div class="pipeline-step-label">Flow Control</div>
+        </div>
+        <div class="pipeline-arrow">→</div>
+        <div class="pipeline-step" id="step-monitor">
+          <div class="pipeline-step-icon">📊</div>
+          <div class="pipeline-step-label">Monitor</div>
+        </div>
+        <div class="pipeline-arrow">→</div>
+        <div class="pipeline-step" id="step-tts">
+          <div class="pipeline-step-icon">🔊</div>
+          <div class="pipeline-step-label">TTS Ready</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <button class="btn btn-primary" id="start-btn" onclick="startPipeline()">
+          ▶️ Run Complete Pipeline
+        </button>
+      </div>
+
+      <div class="output-section">
+        <div class="output-box">
+          <h3>📥 Raw LLM Output (with markdown)</h3>
+          <div id="raw-output"></div>
+        </div>
+        <div class="output-box">
+          <h3>✨ Cleaned TTS Output</h3>
+          <div id="clean-output"></div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">📊 Performance Metrics</div>
+        <div class="stats-grid" id="stats" style="display: none;">
+          <div class="stat">
+            <div class="stat-value" id="stat-ttft">0ms</div>
+            <div class="stat-label">Time to First Token</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value" id="stat-duration">0ms</div>
+            <div class="stat-label">Total Duration</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value" id="stat-chunks">0</div>
+            <div class="stat-label">Chunks Processed</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value" id="stat-fillers">0</div>
+            <div class="stat-label">Fillers Injected</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value" id="stat-chars-removed">0</div>
+            <div class="stat-label">Chars Removed</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value" id="stat-reduction">0%</div>
+            <div class="stat-label">Size Reduction</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <p>
+        Try vocal-stack: <a href="https://www.npmjs.com/package/vocal-stack" target="_blank">npm install vocal-stack</a>
+      </p>
+    </div>
+  </div>
+
+  <script type="module" src="./index.js"></script>
+</body>
+</html>
