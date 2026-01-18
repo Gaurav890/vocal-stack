@@ -63,7 +63,7 @@ describe('Integration: Full Pipeline', () => {
 
     // Create stream with stall before first chunk
     const chunks = ['Hello', 'World'];
-    const stalledStream = createStallStream(chunks, [0], 500);
+    const stalledStream = createStallStream(chunks, [0], 1000);
 
     const controlled = flowController.wrap(stalledStream);
     const monitored = auditor.track('stall-test', controlled);

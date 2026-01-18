@@ -27,7 +27,7 @@ describe('Integration: Advanced Flow Control', () => {
     manager.start();
 
     // Simulate stall before first chunk
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     // Process chunks
     const chunks = ['Hello', 'World'];
