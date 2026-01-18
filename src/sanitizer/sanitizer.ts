@@ -20,6 +20,64 @@ export class SpeechSanitizer {
   }
 
   /**
+   * Apply built-in sanitization rules
+   */
+  private applyRules(text: string): string {
+    let result = text;
+    for (const rule of this.config.rules) {
+      const ruleFunction = ruleRegistry.get(rule);
+      if (ruleFunction) {
+        result = ruleFunction(result, this.config);
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Apply plugin transformations
+   */
+  private applyPlugins(text: string): string {
+    let result = text;
+    for (const plugin of this.plugins) {
+      const transformed = plugin.transform(result);
+      if (transformed instanceof Promise) {
+        throw new SanitizerError(
+          `Plugin ${plugin.name} returned a Promise in sync sanitize(). Use sanitizeAsync() instead.`
+        );
+      }
+      result = transformed;
+    }
+    return result;
+  }
+
+  /**
+   * Apply custom replacements
+   */
+  private applyCustomReplacements(text: string): string {
+    let result = text;
+    for (const [pattern, replacement] of this.config.customReplacements) {
+      if (typeof pattern === 'string') {
+        result = result.replaceAll(pattern, replacement);
+      } else {
+        result = result.replace(pattern, replacement);
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Clean up whitespace according to configuration
+   */
+  private cleanupWhitespace(text: string): string {
+    if (this.config.preserveLineBreaks) {
+      // Collapse multiple spaces on same line but keep line breaks
+      return text.replace(/ +/g, ' ').replace(/^\s+|\s+$/gm, '');
+    }
+    // Collapse all whitespace including line breaks
+    return text.replace(/\s+/g, ' ').trim();
+  }
+
+  /**
    * Sanitize a string synchronously
    */
   sanitize(text: string): string {
@@ -27,46 +85,12 @@ export class SpeechSanitizer {
       return '';
     }
 
-    let result = text;
-
     try {
-      // Apply built-in rules
-      for (const rule of this.config.rules) {
-        const ruleFunction = ruleRegistry.get(rule);
-        if (ruleFunction) {
-          result = ruleFunction(result, this.config);
-        }
-      }
-
-      // Apply plugins (sync only in this version)
-      for (const plugin of this.plugins) {
-        const transformed = plugin.transform(result);
-        if (transformed instanceof Promise) {
-          throw new SanitizerError(
-            `Plugin ${plugin.name} returned a Promise in sync sanitize(). Use sanitizeAsync() instead.`
-          );
-        }
-        result = transformed;
-      }
-
-      // Apply custom replacements
-      for (const [pattern, replacement] of this.config.customReplacements) {
-        if (typeof pattern === 'string') {
-          result = result.replaceAll(pattern, replacement);
-        } else {
-          result = result.replace(pattern, replacement);
-        }
-      }
-
-      // Clean up whitespace
-      if (this.config.preserveLineBreaks) {
-        // Collapse multiple spaces on same line but keep line breaks
-        result = result.replace(/ +/g, ' ').replace(/^\s+|\s+$/gm, '');
-      } else {
-        // Collapse all whitespace including line breaks
-        result = result.replace(/\s+/g, ' ').trim();
-      }
-
+      let result = text;
+      result = this.applyRules(result);
+      result = this.applyPlugins(result);
+      result = this.applyCustomReplacements(result);
+      result = this.cleanupWhitespace(result);
       return result;
     } catch (error) {
       if (error instanceof SanitizerError) {
