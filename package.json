@@ -63,16 +63,16 @@
     "openai",
     "elevenlabs"
   ],
-  "author": "",
+  "author": "Gaurav <gaurav890@users.noreply.github.com>",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": ""
+    "url": "https://github.com/gaurav890/vocal-stack"
   },
   "bugs": {
-    "url": ""
+    "url": "https://github.com/gaurav890/vocal-stack/issues"
   },
-  "homepage": "",
+  "homepage": "https://github.com/gaurav890/vocal-stack#readme",
   "engines": {
     "node": ">=18.0.0"
   },
