@@ -283,83 +283,81 @@ describe('FlowController', () => {
       expect(controller.getState()).toBe(ConversationState.INTERRUPTED);
     });
 
-    it('should detect stalls and call callback', async () => {
-      vi.useFakeTimers();
-
-      const onStallDetected = vi.fn();
-      const controller = new FlowController({
-        stallThresholdMs: 50,
-        enableFillers: false,
-        onStallDetected,
+    describe('stall detection with fake timers', () => {
+      beforeEach(() => {
+        vi.useFakeTimers();
       });
 
-      async function* mockStream() {
-        await vi.advanceTimersByTimeAsync(100); // Stall past threshold
-        yield 'chunk1';
-      }
-
-      for await (const _chunk of controller.wrap(mockStream())) {
-        // Process
-      }
-
-      expect(onStallDetected).toHaveBeenCalled();
-      const stats = controller.getStats();
-      expect(stats.stallsDetected).toBeGreaterThan(0);
-
-      vi.useRealTimers();
-    });
-
-    it('should inject fillers during stalls before first chunk', async () => {
-      vi.useFakeTimers();
-
-      const onFillerInjected = vi.fn();
-      const controller = new FlowController({
-        stallThresholdMs: 50,
-        enableFillers: true,
-        fillerPhrases: ['um'],
-        onFillerInjected,
+      afterEach(() => {
+        vi.useRealTimers();
       });
 
-      async function* mockStream() {
-        await vi.advanceTimersByTimeAsync(100); // Stall before first chunk
-        yield 'chunk1';
-      }
+      it('should detect stalls and call callback', async () => {
+        const onStallDetected = vi.fn();
+        const controller = new FlowController({
+          stallThresholdMs: 50,
+          enableFillers: false,
+          onStallDetected,
+        });
 
-      for await (const _chunk of controller.wrap(mockStream())) {
-        // Process
-      }
+        async function* mockStream() {
+          await vi.advanceTimersByTimeAsync(100); // Stall past threshold
+          yield 'chunk1';
+        }
 
-      expect(onFillerInjected).toHaveBeenCalledWith('um');
-      const stats = controller.getStats();
-      expect(stats.fillersInjected).toBeGreaterThan(0);
+        for await (const _chunk of controller.wrap(mockStream())) {
+          // Process
+        }
 
-      vi.useRealTimers();
-    });
-
-    it('should NOT inject fillers after first chunk', async () => {
-      vi.useFakeTimers();
-
-      const onFillerInjected = vi.fn();
-      const controller = new FlowController({
-        stallThresholdMs: 50,
-        enableFillers: true,
-        onFillerInjected,
+        expect(onStallDetected).toHaveBeenCalled();
+        const stats = controller.getStats();
+        expect(stats.stallsDetected).toBeGreaterThan(0);
       });
 
-      async function* mockStream() {
-        yield 'chunk1'; // First chunk emitted
-        await vi.advanceTimersByTimeAsync(100); // Stall after first chunk
-        yield 'chunk2';
-      }
+      it('should inject fillers during stalls before first chunk', async () => {
+        const onFillerInjected = vi.fn();
+        const controller = new FlowController({
+          stallThresholdMs: 50,
+          enableFillers: true,
+          fillerPhrases: ['um'],
+          onFillerInjected,
+        });
 
-      for await (const _chunk of controller.wrap(mockStream())) {
-        // Process
-      }
+        async function* mockStream() {
+          await vi.advanceTimersByTimeAsync(100); // Stall before first chunk
+          yield 'chunk1';
+        }
 
-      // Filler should not be injected because first chunk was already emitted
-      expect(onFillerInjected).not.toHaveBeenCalled();
+        for await (const _chunk of controller.wrap(mockStream())) {
+          // Process
+        }
 
-      vi.useRealTimers();
+        expect(onFillerInjected).toHaveBeenCalledWith('um');
+        const stats = controller.getStats();
+        expect(stats.fillersInjected).toBeGreaterThan(0);
+      });
+
+      it('should NOT inject fillers after first chunk', async () => {
+        const onFillerInjected = vi.fn();
+        const controller = new FlowController({
+          stallThresholdMs: 50,
+          enableFillers: true,
+          onFillerInjected,
+        });
+
+        async function* mockStream() {
+          yield 'chunk1'; // First chunk emitted
+          await vi.advanceTimersByTimeAsync(100); // Stall after first chunk
+          yield 'chunk2';
+        }
+
+        for await (const _chunk of controller.wrap(mockStream())) {
+          // Process
+        }
+
+        // Filler should not be injected because first chunk was already emitted
+        expect(onFillerInjected).not.toHaveBeenCalled();
+      });
     });
   });
 
@@ -518,29 +516,35 @@ describe('FlowManager', () => {
       expect(events).toContain('completed');
     });
 
-    it('should emit stall-detected and filler-injected events', async () => {
-      vi.useFakeTimers();
-
-      const manager = new FlowManager({
-        stallThresholdMs: 50,
-        enableFillers: true,
-        fillerPhrases: ['um'],
+    describe('stall events with fake timers', () => {
+      beforeEach(() => {
+        vi.useFakeTimers();
       });
 
-      const events: string[] = [];
-      manager.on((event) => {
-        events.push(event.type);
+      afterEach(() => {
+        vi.useRealTimers();
       });
 
-      manager.start();
-      await vi.advanceTimersByTimeAsync(100); // Trigger stall
-      manager.processChunk('chunk1');
-      manager.complete();
+      it('should emit stall-detected and filler-injected events', async () => {
+        const manager = new FlowManager({
+          stallThresholdMs: 50,
+          enableFillers: true,
+          fillerPhrases: ['um'],
+        });
 
-      expect(events).toContain('stall-detected');
-      expect(events).toContain('filler-injected');
+        const events: string[] = [];
+        manager.on((event) => {
+          events.push(event.type);
+        });
 
-      vi.useRealTimers();
+        manager.start();
+        await vi.advanceTimersByTimeAsync(100); // Trigger stall
+        manager.processChunk('chunk1');
+        manager.complete();
+
+        expect(events).toContain('stall-detected');
+        expect(events).toContain('filler-injected');
+      });
     });
 
     it('should emit interrupted event', () => {
