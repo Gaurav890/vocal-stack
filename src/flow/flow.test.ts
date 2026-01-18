@@ -156,7 +156,7 @@ describe('StallDetector', () => {
     detector.start();
     detector.stop();
 
-    await new Promise((resolve) => setTimeout(resolve, 60));
+    await new Promise((resolve) => setTimeout(resolve, 100));
 
     expect(onStall).not.toHaveBeenCalled();
   });
@@ -279,7 +279,7 @@ describe('FlowController', () => {
       });
 
       async function* mockStream() {
-        await new Promise((resolve) => setTimeout(resolve, 60)); // Stall
+        await new Promise((resolve) => setTimeout(resolve, 100)); // Stall
         yield 'chunk1';
       }
 
@@ -302,7 +302,7 @@ describe('FlowController', () => {
       });
 
       async function* mockStream() {
-        await new Promise((resolve) => setTimeout(resolve, 60)); // Stall before first chunk
+        await new Promise((resolve) => setTimeout(resolve, 100)); // Stall before first chunk
         yield 'chunk1';
       }
 
@@ -325,7 +325,7 @@ describe('FlowController', () => {
 
       async function* mockStream() {
         yield 'chunk1'; // First chunk emitted
-        await new Promise((resolve) => setTimeout(resolve, 60)); // Stall after first chunk
+        await new Promise((resolve) => setTimeout(resolve, 100)); // Stall after first chunk
         yield 'chunk2';
       }
 
@@ -506,7 +506,7 @@ describe('FlowManager', () => {
       });
 
       manager.start();
-      await new Promise((resolve) => setTimeout(resolve, 60));
+      await new Promise((resolve) => setTimeout(resolve, 100));
       manager.processChunk('chunk1');
       manager.complete();
 
