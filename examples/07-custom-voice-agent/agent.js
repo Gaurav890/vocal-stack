@@ -1,9 +1,9 @@
+import { EventEmitter } from 'node:events';
+import { writeFile } from 'node:fs/promises';
 import OpenAI from 'openai';
-import { SpeechSanitizer } from 'vocal-stack/sanitizer';
 import { FlowController } from 'vocal-stack/flow';
 import { VoiceAuditor } from 'vocal-stack/monitor';
-import { writeFile } from 'fs/promises';
-import { EventEmitter } from 'events';
+import { SpeechSanitizer } from 'vocal-stack/sanitizer';
 
 /**
  * CustomVoiceAgent - Production-ready conversational voice agent
@@ -178,10 +178,7 @@ export class CustomVoiceAgent extends EventEmitter {
    * Stream completion from OpenAI
    */
   async *streamCompletion() {
-    const messages = [
-      { role: 'system', content: this.systemPrompt },
-      ...this.conversationHistory,
-    ];
+    const messages = [{ role: 'system', content: this.systemPrompt }, ...this.conversationHistory];
 
     const stream = await this.openai.chat.completions.create({
       model: this.model,
@@ -226,9 +223,7 @@ export class CustomVoiceAgent extends EventEmitter {
    */
   trimHistory() {
     if (this.conversationHistory.length > this.maxHistoryLength) {
-      this.conversationHistory = this.conversationHistory.slice(
-        -this.maxHistoryLength
-      );
+      this.conversationHistory = this.conversationHistory.slice(-this.maxHistoryLength);
     }
   }
 

@@ -1,6 +1,6 @@
-import { SpeechSanitizer } from 'vocal-stack/sanitizer';
 import { FlowController } from 'vocal-stack/flow';
 import { VoiceAuditor } from 'vocal-stack/monitor';
+import { SpeechSanitizer } from 'vocal-stack/sanitizer';
 
 console.log('=== Full Pipeline Example ===\n');
 
@@ -14,7 +14,7 @@ class MockTTSProvider {
     this.chunks.push(text);
     console.log(`[TTS] "${text}"`);
     // Simulate TTS processing time
-    await new Promise(resolve => setTimeout(resolve, 30));
+    await new Promise((resolve) => setTimeout(resolve, 30));
   }
 
   getOutput() {
@@ -31,7 +31,7 @@ async function* mockLLMResponse() {
   console.log('[LLM] Starting response generation...\n');
 
   // Initial delay (thinking time)
-  await new Promise(resolve => setTimeout(resolve, 750));
+  await new Promise((resolve) => setTimeout(resolve, 750));
 
   const response = `# Understanding Voice AI
 
@@ -52,10 +52,10 @@ This makes building voice agents **much easier**!`;
   // Stream in realistic chunks
   const words = response.split(' ');
   for (let i = 0; i < words.length; i++) {
-    yield words[i] + ' ';
+    yield `${words[i]} `;
     // Variable chunk delays to simulate real LLM
     const delay = Math.random() * 60 + 20;
-    await new Promise(resolve => setTimeout(resolve, delay));
+    await new Promise((resolve) => setTimeout(resolve, delay));
   }
 }
 
@@ -82,7 +82,7 @@ const flowController = new FlowController({
 const auditor = new VoiceAuditor({
   enableRealtime: true,
   onMetric: (metric) => {
-    console.log(`\n[MONITOR] Performance metrics:`);
+    console.log('\n[MONITOR] Performance metrics:');
     console.log(`  - TTFT: ${metric.metrics.timeToFirstToken}ms`);
     console.log(`  - Duration: ${metric.metrics.totalDuration}ms`);
     console.log(`  - Tokens: ${metric.metrics.tokenCount}`);
@@ -123,11 +123,11 @@ console.log('Example 2: With vs Without vocal-stack\n');
 
 // Without vocal-stack (raw LLM output)
 async function* rawLLMStream() {
-  await new Promise(resolve => setTimeout(resolve, 800));
+  await new Promise((resolve) => setTimeout(resolve, 800));
   const chunks = ['# Hello\n\n', '**bold** text ', 'and https://example.com'];
   for (const chunk of chunks) {
     yield chunk;
-    await new Promise(resolve => setTimeout(resolve, 50));
+    await new Promise((resolve) => setTimeout(resolve, 50));
   }
 }
 
@@ -176,7 +176,9 @@ for await (const chunk of pipeline) {
 console.log(`\nCleaned output: "${tts2.getOutput()}"`);
 
 const metric = auditor2.getMetrics()[0];
-console.log(`\nTracked metrics: TTFT=${metric.metrics.timeToFirstToken}ms, Duration=${metric.metrics.totalDuration}ms`);
+console.log(
+  `\nTracked metrics: TTFT=${metric.metrics.timeToFirstToken}ms, Duration=${metric.metrics.totalDuration}ms`
+);
 
 console.log('\n---\n');
 
@@ -250,11 +252,11 @@ class VoiceAgent {
 const agent = new VoiceAgent();
 
 async function* productionLLMStream() {
-  await new Promise(resolve => setTimeout(resolve, 750));
+  await new Promise((resolve) => setTimeout(resolve, 750));
   const chunks = ['Hello! ', 'I can help ', 'with that.'];
   for (const chunk of chunks) {
     yield chunk;
-    await new Promise(resolve => setTimeout(resolve, 50));
+    await new Promise((resolve) => setTimeout(resolve, 50));
   }
 }
 

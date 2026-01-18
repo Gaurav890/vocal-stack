@@ -6,21 +6,14 @@ console.log('=== Monitoring Example ===\n');
 console.log('Example 1: Automatic stream tracking\n');
 
 async function* mockLLMStream(delayMs = 50) {
-  const chunks = [
-    'Hello ',
-    'this ',
-    'is ',
-    'a ',
-    'streaming ',
-    'response.',
-  ];
+  const chunks = ['Hello ', 'this ', 'is ', 'a ', 'streaming ', 'response.'];
 
   // Simulate initial delay (time to first token)
-  await new Promise(resolve => setTimeout(resolve, 120));
+  await new Promise((resolve) => setTimeout(resolve, 120));
 
   for (const chunk of chunks) {
     yield chunk;
-    await new Promise(resolve => setTimeout(resolve, delayMs));
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
   }
 }
 
@@ -71,7 +64,7 @@ const auditor2 = new VoiceAuditor();
 auditor2.startTracking('manual-001');
 
 // Simulate processing
-await new Promise(resolve => setTimeout(resolve, 80));
+await new Promise((resolve) => setTimeout(resolve, 80));
 
 // Record first token
 auditor2.recordToken('manual-001');
@@ -79,7 +72,7 @@ console.log('First token received');
 
 // Continue processing
 for (let i = 0; i < 5; i++) {
-  await new Promise(resolve => setTimeout(resolve, 40));
+  await new Promise((resolve) => setTimeout(resolve, 40));
   auditor2.recordToken('manual-001');
   console.log(`Token ${i + 2} received`);
 }
@@ -105,7 +98,7 @@ for (let i = 4; i <= 6; i++) {
 // Export as JSON
 const jsonExport = auditor.export('json');
 console.log('JSON Export (first 500 chars):');
-console.log(jsonExport.substring(0, 500) + '...\n');
+console.log(`${jsonExport.substring(0, 500)}...\n`);
 
 // Export as CSV
 const csvExport = auditor.export('csv');
@@ -119,19 +112,19 @@ const auditor3 = new VoiceAuditor();
 
 // Fast provider
 async function* fastProvider() {
-  await new Promise(resolve => setTimeout(resolve, 50));
+  await new Promise((resolve) => setTimeout(resolve, 50));
   for (let i = 0; i < 10; i++) {
     yield 'fast ';
-    await new Promise(resolve => setTimeout(resolve, 20));
+    await new Promise((resolve) => setTimeout(resolve, 20));
   }
 }
 
 // Slow provider
 async function* slowProvider() {
-  await new Promise(resolve => setTimeout(resolve, 150));
+  await new Promise((resolve) => setTimeout(resolve, 150));
   for (let i = 0; i < 10; i++) {
     yield 'slow ';
-    await new Promise(resolve => setTimeout(resolve, 50));
+    await new Promise((resolve) => setTimeout(resolve, 50));
   }
 }
 
@@ -145,8 +138,8 @@ for await (const _chunk of auditor3.track('slow-provider', slowProvider())) {
 }
 
 const metrics = auditor3.getMetrics();
-const fastMetric = metrics.find(m => m.id === 'fast-provider');
-const slowMetric = metrics.find(m => m.id === 'slow-provider');
+const fastMetric = metrics.find((m) => m.id === 'fast-provider');
+const slowMetric = metrics.find((m) => m.id === 'slow-provider');
 
 console.log('Performance Comparison:');
 console.log('\nFast Provider:');
@@ -159,7 +152,11 @@ console.log(`  - TTFT: ${slowMetric.metrics.timeToFirstToken}ms`);
 console.log(`  - Total: ${slowMetric.metrics.totalDuration}ms`);
 console.log(`  - Avg latency: ${slowMetric.metrics.averageTokenLatency.toFixed(2)}ms/token`);
 
-const improvement = ((slowMetric.metrics.timeToFirstToken - fastMetric.metrics.timeToFirstToken) / slowMetric.metrics.timeToFirstToken * 100).toFixed(1);
+const improvement = (
+  ((slowMetric.metrics.timeToFirstToken - fastMetric.metrics.timeToFirstToken) /
+    slowMetric.metrics.timeToFirstToken) *
+  100
+).toFixed(1);
 console.log(`\nFast provider is ${improvement}% faster for TTFT`);
 
 console.log('\n=== Example Complete ===');

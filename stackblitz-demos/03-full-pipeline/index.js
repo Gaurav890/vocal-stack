@@ -1,6 +1,6 @@
-import { SpeechSanitizer } from 'vocal-stack/sanitizer';
 import { FlowController } from 'vocal-stack/flow';
 import { VoiceAuditor } from 'vocal-stack/monitor';
+import { SpeechSanitizer } from 'vocal-stack/sanitizer';
 
 let isRunning = false;
 
@@ -22,21 +22,21 @@ Visit https://example.com to learn more!!!`;
   const chunks = response.split(' ');
 
   // Initial stall (1.5 seconds)
-  await new Promise(resolve => setTimeout(resolve, 1500));
+  await new Promise((resolve) => setTimeout(resolve, 1500));
 
   // Stream chunks
   for (let i = 0; i < chunks.length; i++) {
-    yield chunks[i] + ' ';
+    yield `${chunks[i]} `;
     // Variable delays to simulate real LLM
     const delay = Math.random() * 100 + 50;
-    await new Promise(resolve => setTimeout(resolve, delay));
+    await new Promise((resolve) => setTimeout(resolve, delay));
   }
 }
 
 // Activate pipeline step visual
 function activateStep(stepId) {
   // Deactivate all
-  document.querySelectorAll('.pipeline-step').forEach(el => {
+  document.querySelectorAll('.pipeline-step').forEach((el) => {
     el.classList.remove('active');
   });
   // Activate this one
@@ -141,7 +141,6 @@ window.startPipeline = async () => {
     // Show final stats
     statsEl.style.display = 'grid';
     updateFinalStats();
-
   } catch (error) {
     console.error('Pipeline error:', error);
   }
@@ -160,11 +159,11 @@ window.startPipeline = async () => {
 
   function updateStats() {
     const duration = Date.now() - startTime;
-    document.getElementById('stat-duration').textContent = duration + 'ms';
+    document.getElementById('stat-duration').textContent = `${duration}ms`;
     document.getElementById('stat-chunks').textContent = chunksCount;
     document.getElementById('stat-fillers').textContent = fillersCount;
     if (firstChunkTime !== null) {
-      document.getElementById('stat-ttft').textContent = firstChunkTime + 'ms';
+      document.getElementById('stat-ttft').textContent = `${firstChunkTime}ms`;
     }
   }
 
@@ -172,19 +171,17 @@ window.startPipeline = async () => {
     updateStats();
 
     // Calculate reduction
-    const reduction = rawTotalLength > 0
-      ? ((charsRemoved / rawTotalLength) * 100).toFixed(1)
-      : 0;
+    const reduction = rawTotalLength > 0 ? ((charsRemoved / rawTotalLength) * 100).toFixed(1) : 0;
 
     document.getElementById('stat-chars-removed').textContent = charsRemoved;
-    document.getElementById('stat-reduction').textContent = reduction + '%';
+    document.getElementById('stat-reduction').textContent = `${reduction}%`;
 
     // Get auditor metrics
     const metrics = auditor.getMetrics();
     if (metrics.length > 0) {
       const metric = metrics[0];
-      document.getElementById('stat-ttft').textContent = metric.metrics.timeToFirstToken + 'ms';
-      document.getElementById('stat-duration').textContent = metric.metrics.totalDuration + 'ms';
+      document.getElementById('stat-ttft').textContent = `${metric.metrics.timeToFirstToken}ms`;
+      document.getElementById('stat-duration').textContent = `${metric.metrics.totalDuration}ms`;
     }
   }
 };

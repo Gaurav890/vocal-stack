@@ -38,6 +38,21 @@
       }
     }
   },
+  "overrides": [
+    {
+      "include": ["examples/**/*.js", "stackblitz-demos/**/*.js"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noConsoleLog": "off"
+          },
+          "complexity": {
+            "noForEach": "off"
+          }
+        }
+      }
+    }
+  ],
   "javascript": {
     "formatter": {
       "quoteStyle": "single",

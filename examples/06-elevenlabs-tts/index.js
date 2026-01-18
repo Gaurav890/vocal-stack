@@ -1,11 +1,11 @@
+import { createWriteStream } from 'node:fs';
+import { Readable } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
 import { ElevenLabsClient } from 'elevenlabs';
 import OpenAI from 'openai';
-import { SpeechSanitizer } from 'vocal-stack/sanitizer';
 import { FlowController } from 'vocal-stack/flow';
 import { VoiceAuditor } from 'vocal-stack/monitor';
-import { writeFile, createWriteStream } from 'fs';
-import { Readable } from 'stream';
-import { pipeline } from 'stream/promises';
+import { SpeechSanitizer } from 'vocal-stack/sanitizer';
 
 // Check for API keys
 if (!process.env.ELEVENLABS_API_KEY) {
@@ -56,9 +56,13 @@ const auditor = new VoiceAuditor({
 });
 
 // Helper: Convert text to speech using ElevenLabs
-async function sendToElevenLabsTTS(text, filename = 'output.mp3', voiceId = 'pNInz6obpgDQGcFmaJgB') {
+async function sendToElevenLabsTTS(
+  text,
+  filename = 'output.mp3',
+  voiceId = 'pNInz6obpgDQGcFmaJgB'
+) {
   try {
-    console.log(`[TTS] Converting text to speech with ElevenLabs...`);
+    console.log('[TTS] Converting text to speech with ElevenLabs...');
 
     const audio = await elevenlabs.textToSpeech.convert(voiceId, {
       text,
@@ -102,7 +106,8 @@ async function* getOpenAIStream(prompt) {
 // Example 1: Basic pipeline with ElevenLabs
 console.log('Example 1: OpenAI GPT-4 → vocal-stack → ElevenLabs TTS\n');
 
-const prompt = 'Explain what makes a voice sound natural in 2-3 sentences. Use markdown formatting.';
+const prompt =
+  'Explain what makes a voice sound natural in 2-3 sentences. Use markdown formatting.';
 
 const llmStream = getOpenAIStream(prompt);
 const sanitized = sanitizer.sanitizeStream(llmStream);

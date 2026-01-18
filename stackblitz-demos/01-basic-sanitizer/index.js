@@ -41,7 +41,7 @@ const sanitizer = new SpeechSanitizer();
 \`\`\`
 
 Email: support@example.com
-Website: https://example.com`
+Website: https://example.com`,
 };
 
 // Load example
@@ -91,7 +91,7 @@ window.sanitize = () => {
   document.getElementById('stat-chars-removed').textContent = charsRemoved;
   document.getElementById('stat-original').textContent = originalLength;
   document.getElementById('stat-cleaned').textContent = cleanedLength;
-  document.getElementById('stat-reduction').textContent = reduction + '%';
+  document.getElementById('stat-reduction').textContent = `${reduction}%`;
   document.getElementById('stats').style.display = 'grid';
 };
 

@@ -1,6 +1,6 @@
-import { CustomVoiceAgent } from './agent.js';
+import { writeFile } from 'node:fs/promises';
 import OpenAI from 'openai';
-import { writeFile } from 'fs/promises';
+import { CustomVoiceAgent } from './agent.js';
 
 // Check for API key
 if (!process.env.OPENAI_API_KEY) {
@@ -40,7 +40,9 @@ agent.on('request-complete', (data) => {
 });
 
 agent.on('metric', (metric) => {
-  console.log(`[METRIC] TTFT: ${metric.metrics.timeToFirstToken}ms, Duration: ${metric.metrics.totalDuration}ms`);
+  console.log(
+    `[METRIC] TTFT: ${metric.metrics.timeToFirstToken}ms, Duration: ${metric.metrics.totalDuration}ms`
+  );
 });
 
 agent.on('error', (data) => {
@@ -61,7 +63,9 @@ await agent.chat("That's interesting! Can you elaborate?");
 console.log('\n--- Conversation History ---');
 const history = agent.getHistory();
 history.forEach((msg, i) => {
-  console.log(`${i + 1}. [${msg.role.toUpperCase()}] ${msg.content.substring(0, 60)}${msg.content.length > 60 ? '...' : ''}`);
+  console.log(
+    `${i + 1}. [${msg.role.toUpperCase()}] ${msg.content.substring(0, 60)}${msg.content.length > 60 ? '...' : ''}`
+  );
 });
 
 // Show statistics
@@ -109,7 +113,7 @@ agent2.on('chunk', (data) => {
 });
 
 console.log('[USER] "Explain quantum computing in one sentence."\n');
-const response = await agent2.chat('Explain quantum computing in one sentence.');
+const _response = await agent2.chat('Explain quantum computing in one sentence.');
 
 // Save combined audio
 if (audioChunks.length > 0) {
@@ -148,7 +152,7 @@ setTimeout(() => {
 
 try {
   await chatPromise;
-} catch (error) {
+} catch (_error) {
   console.log('[SYSTEM] Request was interrupted');
 }
 

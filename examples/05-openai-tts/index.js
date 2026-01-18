@@ -1,8 +1,8 @@
+import { writeFile } from 'node:fs/promises';
 import OpenAI from 'openai';
-import { SpeechSanitizer } from 'vocal-stack/sanitizer';
 import { FlowController } from 'vocal-stack/flow';
 import { VoiceAuditor } from 'vocal-stack/monitor';
-import { writeFile } from 'fs/promises';
+import { SpeechSanitizer } from 'vocal-stack/sanitizer';
 
 // Check for API key
 if (!process.env.OPENAI_API_KEY) {
@@ -136,7 +136,7 @@ class OpenAIVoiceAgent {
     this.auditor = new VoiceAuditor({ enableRealtime: true });
   }
 
-  async *streamCompletion(messages, requestId) {
+  async *streamCompletion(messages, _requestId) {
     const stream = await this.openai.chat.completions.create({
       model: 'gpt-4',
       messages,

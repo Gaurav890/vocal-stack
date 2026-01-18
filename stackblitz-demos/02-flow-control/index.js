@@ -10,20 +10,20 @@ async function* mockLLMStream(config) {
     'your question. ',
     'Let me explain ',
     'how this works. ',
-    'It\'s actually quite ',
+    "It's actually quite ",
     'interesting and ',
-    'powerful!'
+    'powerful!',
   ];
 
   // Initial stall
   if (config.initialStall > 0) {
-    await new Promise(resolve => setTimeout(resolve, config.initialStall));
+    await new Promise((resolve) => setTimeout(resolve, config.initialStall));
   }
 
   // Yield chunks with delays
   for (const chunk of chunks) {
     yield chunk;
-    await new Promise(resolve => setTimeout(resolve, config.chunkDelay));
+    await new Promise((resolve) => setTimeout(resolve, config.chunkDelay));
   }
 }
 
@@ -45,10 +45,10 @@ window.startDemo = async () => {
 
   // Get configuration
   const config = {
-    stallThresholdMs: parseInt(document.getElementById('stall-threshold').value),
+    stallThresholdMs: Number.parseInt(document.getElementById('stall-threshold').value),
     enableFillers: document.getElementById('enable-fillers').value === 'true',
-    chunkDelay: parseInt(document.getElementById('chunk-delay').value),
-    initialStall: parseInt(document.getElementById('initial-stall').value),
+    chunkDelay: Number.parseInt(document.getElementById('chunk-delay').value),
+    initialStall: Number.parseInt(document.getElementById('initial-stall').value),
   };
 
   // Stats
@@ -72,7 +72,7 @@ window.startDemo = async () => {
   });
 
   // Track state changes
-  let lastState = 'idle';
+  let _lastState = 'idle';
   const manager = controller.flowManager;
   manager.on((event) => {
     if (event.type === 'stall-detected') {
@@ -81,7 +81,7 @@ window.startDemo = async () => {
       updateStats();
     }
     if (event.type === 'state-change') {
-      lastState = event.to;
+      _lastState = event.to;
     }
   });
 
@@ -148,8 +148,9 @@ window.startDemo = async () => {
     document.getElementById('stat-chunks').textContent = chunksCount;
     document.getElementById('stat-fillers').textContent = fillersCount;
     document.getElementById('stat-stalls').textContent = stallsCount;
-    document.getElementById('stat-duration').textContent = duration + 's';
-    document.getElementById('stat-ttft').textContent = firstChunkTime !== null ? firstChunkTime + 'ms' : '-';
+    document.getElementById('stat-duration').textContent = `${duration}s`;
+    document.getElementById('stat-ttft').textContent =
+      firstChunkTime !== null ? `${firstChunkTime}ms` : '-';
   }
 };
 

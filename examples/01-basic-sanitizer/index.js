@@ -4,7 +4,8 @@ console.log('=== Basic Sanitizer Example ===\n');
 
 // Example 1: Quick sanitization with default function
 console.log('Example 1: Quick sanitization');
-const markdownText = '# Hello World\n\nCheck out this [link](https://example.com) and some **bold** text.';
+const markdownText =
+  '# Hello World\n\nCheck out this [link](https://example.com) and some **bold** text.';
 const cleaned = sanitizeForSpeech(markdownText);
 
 console.log('Original:', markdownText);
@@ -53,7 +54,7 @@ async function* mockLLMStream() {
   for (const chunk of chunks) {
     yield chunk;
     // Simulate streaming delay
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 100));
   }
 }
 

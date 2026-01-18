@@ -16,13 +16,13 @@ async function* slowLLMStream() {
   console.log('[LLM] Starting stream...');
 
   // Simulate initial stall (800ms delay)
-  await new Promise(resolve => setTimeout(resolve, 800));
+  await new Promise((resolve) => setTimeout(resolve, 800));
 
   yield 'Hello there! ';
-  await new Promise(resolve => setTimeout(resolve, 50));
+  await new Promise((resolve) => setTimeout(resolve, 50));
 
   yield 'I was thinking about ';
-  await new Promise(resolve => setTimeout(resolve, 50));
+  await new Promise((resolve) => setTimeout(resolve, 50));
 
   yield 'your question.';
 }
@@ -67,11 +67,11 @@ async function* longLLMStream() {
 
   for (const chunk of chunks) {
     yield chunk;
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 100));
   }
 }
 
-const interruptStream = async function*() {
+const interruptStream = (async function* () {
   for await (const chunk of controller2.wrap(longLLMStream())) {
     chunkCount++;
     console.log(`[TTS] Chunk ${chunkCount}: ${chunk}`);
@@ -84,7 +84,7 @@ const interruptStream = async function*() {
 
     yield chunk;
   }
-}();
+})();
 
 for await (const _chunk of interruptStream) {
   // Process chunks
@@ -131,13 +131,13 @@ manager.on((event) => {
 manager.start();
 
 // Simulate stall before first chunk
-await new Promise(resolve => setTimeout(resolve, 600));
+await new Promise((resolve) => setTimeout(resolve, 600));
 
 // Process chunks manually
 const chunks = ['Hello', ' from', ' low-level', ' API!'];
 for (const chunk of chunks) {
   manager.processChunk(chunk);
-  await new Promise(resolve => setTimeout(resolve, 50));
+  await new Promise((resolve) => setTimeout(resolve, 50));
 }
 
 manager.complete();
