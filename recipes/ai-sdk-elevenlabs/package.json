@@ -1,0 +1,10 @@
+{
+  "name": "vocal-stack-recipe-ai-sdk-elevenlabs",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "peerDependencies": {
+    "ai": ">=7",
+    "vocal-stack": ">=2"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "name": "vocal-stack-recipe-deepgram-flux",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "peerDependencies": {
+    "@deepgram/sdk": ">=4",
+    "vocal-stack": ">=2"
+  }
+}

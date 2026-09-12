@@ -45,10 +45,10 @@ window.startDemo = async () => {
 
   // Get configuration
   const config = {
-    stallThresholdMs: Number.parseInt(document.getElementById('stall-threshold').value),
+    stallThresholdMs: Number.parseInt(document.getElementById('stall-threshold').value, 10),
     enableFillers: document.getElementById('enable-fillers').value === 'true',
-    chunkDelay: Number.parseInt(document.getElementById('chunk-delay').value),
-    initialStall: Number.parseInt(document.getElementById('initial-stall').value),
+    chunkDelay: Number.parseInt(document.getElementById('chunk-delay').value, 10),
+    initialStall: Number.parseInt(document.getElementById('initial-stall').value, 10),
   };
 
   // Stats

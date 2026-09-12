@@ -11,7 +11,8 @@ import { ConversationStateMachine } from './state-machine';
 import { ConversationState, type FlowConfig, type FlowStats } from './types';
 
 /**
- * High-level stream wrapper for flow control
+ * High-level stream wrapper for flow control.
+ * @deprecated Use createVoicePipeline() from vocal-stack/turn.
  */
 export class FlowController {
   private readonly config: Required<FlowConfig>;
@@ -34,6 +35,7 @@ export class FlowController {
     totalDurationMs: 0,
   };
   private startTime: number | null = null;
+  private readonly interruptWaiters = new Set<() => void>();
 
   constructor(config: FlowConfig = {}) {
     this.config = {
@@ -68,8 +70,30 @@ export class FlowController {
     this.stateMachine.transition(ConversationState.WAITING);
     this.stallDetector.start();
 
+    const iterator = input[Symbol.asyncIterator]();
     try {
-      for await (const chunk of input) {
+      while (true) {
+        const interrupted = Symbol('interrupted');
+        let notifyInterrupt!: () => void;
+        const interruption = new Promise<typeof interrupted>((resolve) => {
+          notifyInterrupt = () => resolve(interrupted);
+          this.interruptWaiters.add(notifyInterrupt);
+        });
+        const next = await Promise.race([iterator.next(), interruption]);
+        this.interruptWaiters.delete(notifyInterrupt);
+
+        if (next === interrupted) {
+          try {
+            const returned = iterator.return?.();
+            if (returned instanceof Promise) void returned.catch(() => {});
+          } catch {
+            // Local interruption is complete even if upstream cancellation fails.
+          }
+          break;
+        }
+        if (next.done) break;
+
+        const chunk = next.value;
         // Check if interrupted
         if (this.stateMachine.getState() === ConversationState.INTERRUPTED) {
           break;
@@ -99,6 +123,7 @@ export class FlowController {
     } catch (error) {
       throw new FlowControlError('Flow control error during stream processing', { error });
     } finally {
+      this.interruptWaiters.clear();
       this.stallDetector.stop();
       this.stats.totalDurationMs = Date.now() - (this.startTime ?? Date.now());
     }
@@ -114,6 +139,8 @@ export class FlowController {
       this.stallDetector.stop();
       this.fillerInjector.reset(); // Cancel any pending fillers
       this.bufferManager.clear(); // Clear buffered chunks
+      for (const notify of this.interruptWaiters) notify();
+      this.interruptWaiters.clear();
     }
   }
 
@@ -160,6 +187,8 @@ export class FlowController {
   }
 
   private reset(): void {
+    this.stateMachine.reset();
+    this.interruptWaiters.clear();
     this.firstChunkEmitted = false;
     this.fillerInjector.reset();
     this.bufferManager.clear();
@@ -175,6 +204,7 @@ export class FlowController {
 
 /**
  * Convenience function to create and use flow controller
+ * @deprecated Use createVoicePipeline() from vocal-stack/turn.
  */
 export function withFlowControl(
   input: AsyncIterable<string>,

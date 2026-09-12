@@ -127,7 +127,7 @@ describe('VoiceAuditor', () => {
       expect(metrics[0]?.metrics.timeToFirstToken).toBeGreaterThanOrEqual(0);
     });
 
-    it('should complete tracking even if stream throws', async () => {
+    it('should mark tracking as failed if stream throws', async () => {
       const auditor = new VoiceAuditor();
 
       async function* mockStream() {
@@ -145,7 +145,8 @@ describe('VoiceAuditor', () => {
 
       const metrics = auditor.getMetrics();
       expect(metrics).toHaveLength(1);
-      expect(metrics[0]?.completed).toBe(true);
+      expect(metrics[0]?.completed).toBe(false);
+      expect(metrics[0]?.outcome).toBe('failed');
     });
   });
 

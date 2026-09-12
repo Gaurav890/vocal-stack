@@ -326,29 +326,29 @@
         <div class="section-title">Configuration:</div>
         <div class="controls">
           <div class="control-group">
-            <label>Stall Threshold (ms)</label>
+            <label for="stall-threshold">Stall Threshold (ms)</label>
             <input type="number" id="stall-threshold" value="1000" min="100" max="5000" step="100">
           </div>
           <div class="control-group">
-            <label>Enable Fillers</label>
+            <label for="enable-fillers">Enable Fillers</label>
             <select id="enable-fillers">
               <option value="true" selected>Yes</option>
               <option value="false">No</option>
             </select>
           </div>
           <div class="control-group">
-            <label>Chunk Delay (ms)</label>
+            <label for="chunk-delay">Chunk Delay (ms)</label>
             <input type="number" id="chunk-delay" value="200" min="50" max="2000" step="50">
           </div>
           <div class="control-group">
-            <label>Initial Stall (ms)</label>
+            <label for="initial-stall">Initial Stall (ms)</label>
             <input type="number" id="initial-stall" value="1500" min="0" max="5000" step="100">
           </div>
         </div>
       </div>
 
       <div class="section">
-        <button class="btn btn-primary" id="start-btn" onclick="startDemo()">
+        <button type="button" class="btn btn-primary" id="start-btn" onclick="startDemo()">
           ▶️ Start Simulation
         </button>
       </div>

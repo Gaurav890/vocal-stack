@@ -235,6 +235,19 @@ Check [this link](https://example.com).
 
       expect(results.join('')).toContain('Incomplete');
     });
+
+    it('should preserve punctuation across source chunk boundaries', async () => {
+      const sanitizer = new SpeechSanitizer({ rules: [] });
+
+      async function* mockStream() {
+        yield 'First sentence';
+        yield '. Second sentence!';
+      }
+
+      const results: string[] = [];
+      for await (const chunk of sanitizer.sanitizeStream(mockStream())) results.push(chunk);
+      expect(results.join('')).toBe('First sentence. Second sentence!');
+    });
   });
 
   describe('plugin system', () => {
@@ -258,6 +271,37 @@ Check [this link](https://example.com).
 
       const result = sanitizer.sanitize('hello world');
       expect(result).toBe('HI WORLD'); // plugin1 runs first (priority 1) making "hi world", then plugin2 makes it uppercase
+    });
+
+    it('should run asynchronous plugins through sanitizeAsync()', async () => {
+      const sanitizer = new SpeechSanitizer({
+        rules: [],
+        plugins: [
+          { name: 'async', priority: 1, transform: async (text) => text.replace('one', 'two') },
+          { name: 'sync', priority: 2, transform: (text) => text.toUpperCase() },
+        ],
+      });
+
+      await expect(sanitizer.sanitizeAsync('one')).resolves.toBe('TWO');
+      expect(() => sanitizer.sanitize('one')).toThrow('sanitizeAsync');
+    });
+
+    it('should wrap asynchronous plugin failures', async () => {
+      const sanitizer = new SpeechSanitizer({
+        rules: [],
+        plugins: [
+          {
+            name: 'failure',
+            priority: 1,
+            transform: async () => {
+              throw new Error('plugin failure');
+            },
+          },
+        ],
+      });
+
+      await expect(sanitizer.sanitizeAsync('hello')).rejects.toThrow('Failed to sanitize text');
+      await expect(sanitizer.sanitizeAsync('   ')).resolves.toBe('');
     });
   });
 });

@@ -1,0 +1,32 @@
+name: Bug report
+description: Report a reproducible reliability or compatibility problem
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options: [text, turn, telemetry, testing, compatibility, packaging]
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version and runtime
+      placeholder: vocal-stack 2.x, Node 24 or browser version
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Include a scenario timeline or chunk partition when possible. Remove sensitive content.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected and actual behavior
+    validations:
+      required: true

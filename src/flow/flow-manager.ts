@@ -17,7 +17,8 @@ import {
 } from './types';
 
 /**
- * Low-level event-based flow manager
+ * Low-level event-based flow manager.
+ * @deprecated Use createVoicePipeline() from vocal-stack/turn.
  */
 export class FlowManager {
   private readonly config: Required<FlowManagerConfig>;
@@ -231,10 +232,7 @@ export class FlowManager {
     for (const listener of this.listeners) {
       try {
         listener(event);
-      } catch (error) {
-        // Don't let listener errors break the flow
-        console.error('Error in FlowManager event listener:', error);
-      }
+      } catch (_error) {}
     }
   }
 

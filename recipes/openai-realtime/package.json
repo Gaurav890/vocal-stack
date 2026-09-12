@@ -1,0 +1,9 @@
+{
+  "name": "vocal-stack-recipe-openai-realtime",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "peerDependencies": {
+    "vocal-stack": ">=2"
+  }
+}

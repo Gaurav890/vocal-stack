@@ -252,8 +252,8 @@
     <div class="demo-card">
       <div class="info-box">
         <p>
-          <strong>Complete Pipeline:</strong> This demo shows how all three vocal-stack modules work together.
-          LLM output (with markdown) → Text Sanitization → Flow Control (with fillers) → Performance Monitoring → Clean TTS-ready output!
+          <strong>V2 reliability pipeline:</strong> Model deltas flow through incremental normalization,
+          speech segmentation, playback acknowledgement, and privacy-safe telemetry.
         </p>
       </div>
 
@@ -265,17 +265,17 @@
         <div class="pipeline-arrow">→</div>
         <div class="pipeline-step" id="step-sanitizer">
           <div class="pipeline-step-icon">🧹</div>
-          <div class="pipeline-step-label">Sanitizer</div>
+          <div class="pipeline-step-label">Normalizer</div>
         </div>
         <div class="pipeline-arrow">→</div>
         <div class="pipeline-step" id="step-flow">
           <div class="pipeline-step-icon">⚡</div>
-          <div class="pipeline-step-label">Flow Control</div>
+          <div class="pipeline-step-label">Segmenter</div>
         </div>
         <div class="pipeline-arrow">→</div>
         <div class="pipeline-step" id="step-monitor">
           <div class="pipeline-step-icon">📊</div>
-          <div class="pipeline-step-label">Monitor</div>
+          <div class="pipeline-step-label">Telemetry</div>
         </div>
         <div class="pipeline-arrow">→</div>
         <div class="pipeline-step" id="step-tts">
@@ -285,7 +285,7 @@
       </div>
 
       <div class="section">
-        <button class="btn btn-primary" id="start-btn" onclick="startPipeline()">
+        <button type="button" class="btn btn-primary" id="start-btn" onclick="startPipeline()">
           ▶️ Run Complete Pipeline
         </button>
       </div>
@@ -306,7 +306,7 @@
         <div class="stats-grid" id="stats" style="display: none;">
           <div class="stat">
             <div class="stat-value" id="stat-ttft">0ms</div>
-            <div class="stat-label">Time to First Token</div>
+            <div class="stat-label">First Input Delta</div>
           </div>
           <div class="stat">
             <div class="stat-value" id="stat-duration">0ms</div>
@@ -318,7 +318,7 @@
           </div>
           <div class="stat">
             <div class="stat-value" id="stat-fillers">0</div>
-            <div class="stat-label">Fillers Injected</div>
+            <div class="stat-label">Cue Requests</div>
           </div>
           <div class="stat">
             <div class="stat-value" id="stat-chars-removed">0</div>

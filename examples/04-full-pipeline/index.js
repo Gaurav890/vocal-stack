@@ -85,7 +85,7 @@ const auditor = new VoiceAuditor({
     console.log('\n[MONITOR] Performance metrics:');
     console.log(`  - TTFT: ${metric.metrics.timeToFirstToken}ms`);
     console.log(`  - Duration: ${metric.metrics.totalDuration}ms`);
-    console.log(`  - Tokens: ${metric.metrics.tokenCount}`);
+    console.log(`  - Chunks: ${metric.metrics.chunkCount}`);
     console.log(`  - Avg latency: ${metric.metrics.averageTokenLatency.toFixed(2)}ms/token`);
   },
 });

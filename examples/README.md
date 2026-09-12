@@ -1,6 +1,11 @@
 # vocal-stack Examples
 
-Welcome to the vocal-stack examples! These examples demonstrate how to use vocal-stack to build production-ready voice AI applications.
+Start with [`v2-quickstart.ts`](./v2-quickstart.ts) for the current reliability API. It is compiled
+in CI against the package source.
+
+The numbered directories demonstrate deprecated v1 compatibility APIs. They remain executable
+through v2 for migration testing, but new applications should use `/text`, `/turn`, `/telemetry`,
+and `/testing` as shown in the root README and provider recipes.
 
 ## Quick Start
 
@@ -130,7 +135,7 @@ Real-world integration with ElevenLabs TTS and OpenAI GPT-4.
 ### 7. Custom Voice Agent
 **Directory**: [`07-custom-voice-agent/`](./07-custom-voice-agent)
 
-Complete production-ready conversational voice agent.
+Legacy end-to-end conversational voice agent example.
 
 **What you'll learn**:
 - Multi-turn conversations with context
@@ -141,7 +146,7 @@ Complete production-ready conversational voice agent.
 - Error handling and retry logic
 - Metrics export
 
-**Best for**: Building production applications
+**Best for**: Migrating an existing v1 application
 
 **Requirements**: OpenAI API key
 

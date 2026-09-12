@@ -26,7 +26,7 @@ export function markdownRule(text: string, _config: Required<SanitizerConfig>): 
   result = result.replace(/^>\s+/gm, '');
 
   // Remove horizontal rules (---, ***, ___)
-  result = result.replace(/^[\-*_]{3,}$/gm, '');
+  result = result.replace(/^[-*_]{3,}$/gm, '');
 
   // Remove list markers (-, *, 1., etc.)
   result = result.replace(/^[\s]*[-*+]\s+/gm, '');

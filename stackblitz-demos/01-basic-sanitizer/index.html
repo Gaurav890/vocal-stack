@@ -243,10 +243,10 @@
       <div class="section">
         <div class="section-title">Input Text (with markdown, URLs, etc.):</div>
         <div class="examples">
-          <button class="example-btn" onclick="loadExample('markdown')">Markdown Example</button>
-          <button class="example-btn" onclick="loadExample('urls')">URLs Example</button>
-          <button class="example-btn" onclick="loadExample('code')">Code Example</button>
-          <button class="example-btn" onclick="loadExample('mixed')">Mixed Example</button>
+          <button type="button" class="example-btn" onclick="loadExample('markdown')">Markdown Example</button>
+          <button type="button" class="example-btn" onclick="loadExample('urls')">URLs Example</button>
+          <button type="button" class="example-btn" onclick="loadExample('code')">Code Example</button>
+          <button type="button" class="example-btn" onclick="loadExample('mixed')">Mixed Example</button>
         </div>
         <textarea id="input" class="input-area" placeholder="Enter text with markdown, URLs, code blocks...">## Welcome to vocal-stack!
 
@@ -263,8 +263,8 @@ Visit https://example.com to learn more!!!</textarea>
       </div>
 
       <div class="controls">
-        <button class="btn btn-primary" onclick="sanitize()">🧹 Sanitize Text</button>
-        <button class="btn btn-secondary" onclick="clearAll()">Clear</button>
+        <button type="button" class="btn btn-primary" onclick="sanitize()">🧹 Sanitize Text</button>
+        <button type="button" class="btn btn-secondary" onclick="clearAll()">Clear</button>
       </div>
 
       <div class="section">

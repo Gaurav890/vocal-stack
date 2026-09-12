@@ -9,7 +9,27 @@ export class VocalStackError extends Error {
   ) {
     super(message);
     this.name = 'VocalStackError';
-    Error.captureStackTrace(this, this.constructor);
+    Error.captureStackTrace?.(this, this.constructor);
+  }
+}
+
+/**
+ * Stable error raised by the v2 voice pipeline.
+ */
+export class VoicePipelineError extends VocalStackError {
+  public readonly cause: unknown;
+
+  constructor(
+    message: string,
+    code: string,
+    options: {
+      readonly cause?: unknown;
+      readonly context?: Record<string, unknown>;
+    } = {}
+  ) {
+    super(message, code, options.context);
+    this.name = 'VoicePipelineError';
+    this.cause = options.cause;
   }
 }
 

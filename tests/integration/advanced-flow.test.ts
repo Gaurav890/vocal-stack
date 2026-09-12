@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { type FlowEvent, FlowManager } from '../../src/flow';
 import { VoiceAuditor } from '../../src/monitor';
 import { SpeechSanitizer } from '../../src/sanitizer';
-import { MockTTSProvider, createMockStream } from '../helpers';
+import { createMockStream, MockTTSProvider } from '../helpers';
 
 describe('Integration: Advanced Flow Control', () => {
   it('should use low-level FlowManager with event handling', async () => {

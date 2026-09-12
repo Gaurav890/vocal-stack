@@ -1,35 +1,97 @@
 {
   "name": "vocal-stack",
-  "version": "1.0.2",
-  "description": "High-performance utility library for Voice AI agents - text sanitization, flow control, and latency monitoring",
+  "version": "2.0.0",
+  "description": "Provider-neutral text, interruption, telemetry, and testing reliability for TypeScript voice pipelines",
   "type": "module",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
     },
     "./sanitizer": {
-      "types": "./dist/sanitizer/index.d.ts",
-      "import": "./dist/sanitizer/index.js",
-      "require": "./dist/sanitizer/index.cjs"
+      "import": {
+        "types": "./dist/sanitizer/index.d.ts",
+        "default": "./dist/sanitizer/index.js"
+      },
+      "require": {
+        "types": "./dist/sanitizer/index.d.cts",
+        "default": "./dist/sanitizer/index.cjs"
+      }
     },
     "./flow": {
-      "types": "./dist/flow/index.d.ts",
-      "import": "./dist/flow/index.js",
-      "require": "./dist/flow/index.cjs"
+      "import": {
+        "types": "./dist/flow/index.d.ts",
+        "default": "./dist/flow/index.js"
+      },
+      "require": {
+        "types": "./dist/flow/index.d.cts",
+        "default": "./dist/flow/index.cjs"
+      }
     },
     "./monitor": {
-      "types": "./dist/monitor/index.d.ts",
-      "import": "./dist/monitor/index.js",
-      "require": "./dist/monitor/index.cjs"
+      "import": {
+        "types": "./dist/monitor/index.d.ts",
+        "default": "./dist/monitor/index.js"
+      },
+      "require": {
+        "types": "./dist/monitor/index.d.cts",
+        "default": "./dist/monitor/index.cjs"
+      }
+    },
+    "./text": {
+      "import": {
+        "types": "./dist/text/index.d.ts",
+        "default": "./dist/text/index.js"
+      },
+      "require": {
+        "types": "./dist/text/index.d.cts",
+        "default": "./dist/text/index.cjs"
+      }
+    },
+    "./turn": {
+      "import": {
+        "types": "./dist/turn/index.d.ts",
+        "default": "./dist/turn/index.js"
+      },
+      "require": {
+        "types": "./dist/turn/index.d.cts",
+        "default": "./dist/turn/index.cjs"
+      }
+    },
+    "./telemetry": {
+      "import": {
+        "types": "./dist/telemetry/index.d.ts",
+        "default": "./dist/telemetry/index.js"
+      },
+      "require": {
+        "types": "./dist/telemetry/index.d.cts",
+        "default": "./dist/telemetry/index.cjs"
+      }
+    },
+    "./testing": {
+      "import": {
+        "types": "./dist/testing/index.d.ts",
+        "default": "./dist/testing/index.js"
+      },
+      "require": {
+        "types": "./dist/testing/index.d.cts",
+        "default": "./dist/testing/index.cjs"
+      }
     }
   },
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "sideEffects": false,
   "files": [
     "dist",
+    "docs",
     "README.md",
     "LICENSE"
   ],
@@ -39,11 +101,18 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
+    "test:browser": "playwright test",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "format": "biome format --write .",
     "typecheck": "tsc --noEmit",
-    "prepublishOnly": "npm run build && npm run test && npm run typecheck",
+    "typecheck:recipes": "tsc -p tsconfig.recipes.json",
+    "check": "npm run lint && npm run typecheck && npm run typecheck:recipes && npm run test:coverage && npm run build && npm run package:check && npm run package:size && npm run examples:check",
+    "package:check": "publint && attw --pack . --profile node16 && node scripts/package-smoke.mjs",
+    "package:size": "node scripts/check-package-size.mjs",
+    "benchmark": "npm run build && node benchmarks/text.mjs",
+    "examples:check": "node scripts/check-examples.mjs",
+    "prepublishOnly": "npm run check",
     "changeset": "changeset",
     "version": "changeset version",
     "release": "npm run build && changeset publish"
@@ -67,24 +136,27 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/gaurav890/vocal-stack"
+    "url": "git+https://github.com/gaurav890/vocal-stack.git"
   },
   "bugs": {
     "url": "https://github.com/gaurav890/vocal-stack/issues"
   },
   "homepage": "https://github.com/gaurav890/vocal-stack#readme",
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=22.0.0"
   },
   "devDependencies": {
-    "@biomejs/biome": "^1.9.4",
-    "@changesets/cli": "^2.27.10",
-    "@types/node": "^22.10.5",
-    "@vitest/coverage-v8": "^2.1.8",
-    "tsup": "^8.3.5",
-    "typescript": "^5.7.2",
-    "vitest": "^2.1.8"
-  },
-  "peerDependencies": {},
-  "dependencies": {}
+    "@arethetypeswrong/cli": "^0.18.5",
+    "@biomejs/biome": "^2.5.13",
+    "@changesets/cli": "^3.0.2",
+    "@playwright/test": "^1.63.0",
+    "@types/node": "^22.20.2",
+    "@vitest/coverage-v8": "^5.0.0",
+    "ai": "^7.0.99",
+    "publint": "^0.3.24",
+    "tsup": "^8.5.1",
+    "typescript": "^6.0.3",
+    "vite": "^8.3.0",
+    "vitest": "^5.0.0"
+  }
 }

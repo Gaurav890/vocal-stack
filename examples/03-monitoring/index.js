@@ -23,7 +23,7 @@ const auditor = new VoiceAuditor({
     console.log(`[REALTIME] Request ${metric.id} completed:`);
     console.log(`  - Time to first token: ${metric.metrics.timeToFirstToken}ms`);
     console.log(`  - Total duration: ${metric.metrics.totalDuration}ms`);
-    console.log(`  - Token count: ${metric.metrics.tokenCount}`);
+    console.log(`  - Chunk count: ${metric.metrics.chunkCount}`);
   },
 });
 
@@ -66,7 +66,7 @@ auditor2.startTracking('manual-001');
 // Simulate processing
 await new Promise((resolve) => setTimeout(resolve, 80));
 
-// Record first token
+// Record first source chunk through the deprecated compatibility method
 auditor2.recordToken('manual-001');
 console.log('First token received');
 
@@ -82,7 +82,7 @@ const metric = auditor2.completeTracking('manual-001');
 console.log('\nManual tracking result:');
 console.log(`  - TTFT: ${metric.metrics.timeToFirstToken}ms`);
 console.log(`  - Total duration: ${metric.metrics.totalDuration}ms`);
-console.log(`  - Token count: ${metric.metrics.tokenCount}`);
+console.log(`  - Chunk count: ${metric.metrics.chunkCount}`);
 console.log();
 
 // Example 3: Exporting metrics

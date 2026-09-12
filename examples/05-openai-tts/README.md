@@ -17,7 +17,7 @@ This example demonstrates real-world integration of **vocal-stack** with **OpenA
    - Chat Completions (GPT-4 or GPT-3.5-turbo)
    - Text-to-Speech (TTS-1 or TTS-1-HD)
 
-2. Node.js 18+ installed
+2. Node.js 22+ installed
 
 ## Setup
 
