@@ -6,7 +6,7 @@ Quick guide to get your StackBlitz demos live!
 
 - ✅ GitHub repository created
 - ✅ Code pushed to GitHub
-- ✅ vocal-stack published to npm (done - v1.0.1)
+- A local packed v2 artifact for repository smoke tests, or a stable published release for StackBlitz
 
 ## Step 1: Update GitHub Username
 

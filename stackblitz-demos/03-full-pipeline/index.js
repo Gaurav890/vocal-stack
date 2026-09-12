@@ -1,191 +1,113 @@
-import { FlowController } from 'vocal-stack/flow';
-import { VoiceAuditor } from 'vocal-stack/monitor';
-import { SpeechSanitizer } from 'vocal-stack/sanitizer';
+import { createVoicePipeline } from 'vocal-stack/turn';
 
 let isRunning = false;
 
-// Mock LLM stream with markdown
-async function* mockLLMStream() {
-  const response = `## Welcome to vocal-stack!
+const response = `## Welcome to vocal-stack v2!
 
-This is a **powerful** library for _voice AI_ agents.
+This is a **provider-neutral** reliability layer for custom voice pipelines.
 
-Check out [our docs](https://github.com/vocal-stack) for more info.
+Read [the migration guide](https://github.com/gaurav890/vocal-stack) for details.
 
-Here's some example code:
-\`\`\`javascript
-const sanitizer = new SpeechSanitizer();
+\`\`\`ts
+const turn = pipeline.startTurn({ id, source });
 \`\`\`
 
-Visit https://example.com to learn more!!!`;
+Your listener should hear clean, segmented text—not URLs or code.`;
 
-  const chunks = response.split(' ');
-
-  // Initial stall (1.5 seconds)
-  await new Promise((resolve) => setTimeout(resolve, 1500));
-
-  // Stream chunks
-  for (let i = 0; i < chunks.length; i++) {
-    yield `${chunks[i]} `;
-    // Variable delays to simulate real LLM
-    const delay = Math.random() * 100 + 50;
-    await new Promise((resolve) => setTimeout(resolve, delay));
-  }
-}
-
-// Activate pipeline step visual
 function activateStep(stepId) {
-  // Deactivate all
-  document.querySelectorAll('.pipeline-step').forEach((el) => {
-    el.classList.remove('active');
-  });
-  // Activate this one
-  const step = document.getElementById(stepId);
-  if (step) {
-    step.classList.add('active');
+  for (const element of document.querySelectorAll('.pipeline-step')) {
+    element.classList.remove('active');
   }
+  document.getElementById(stepId)?.classList.add('active');
 }
 
-// Start pipeline
+function addToOutput(container, text, type) {
+  const span = document.createElement('span');
+  span.className = `chunk chunk-${type}`;
+  span.textContent = text;
+  container.appendChild(span);
+}
+
 window.startPipeline = async () => {
   if (isRunning) return;
-
-  // Reset UI
-  const rawOutputEl = document.getElementById('raw-output');
-  const cleanOutputEl = document.getElementById('clean-output');
-  const statsEl = document.getElementById('stats');
-  const startBtn = document.getElementById('start-btn');
-
-  rawOutputEl.innerHTML = '';
-  cleanOutputEl.innerHTML = '';
-  statsEl.style.display = 'none';
-  startBtn.disabled = true;
   isRunning = true;
 
-  // Stats tracking
-  let chunksCount = 0;
-  let fillersCount = 0;
-  let charsRemoved = 0;
-  let rawTotalLength = 0;
-  let cleanTotalLength = 0;
-  const startTime = Date.now();
-  let firstChunkTime = null;
+  const rawOutput = document.getElementById('raw-output');
+  const speechOutput = document.getElementById('clean-output');
+  const stats = document.getElementById('stats');
+  const startButton = document.getElementById('start-btn');
+  rawOutput.textContent = '';
+  speechOutput.textContent = '';
+  stats.style.display = 'none';
+  startButton.disabled = true;
 
-  // Setup modules
-  activateStep('step-llm');
-
-  // 1. Sanitizer
-  const sanitizer = new SpeechSanitizer({
-    rules: ['markdown', 'urls', 'code-blocks', 'punctuation'],
+  let cueRequests = 0;
+  const pipeline = createVoicePipeline({
+    text: { minChars: 24, targetChars: 80, maxChars: 160, maxWaitMs: 250 },
+    stallCues: { enabled: true, delayMs: 700, text: 'One moment.' },
   });
 
-  // 2. Flow Controller
-  const flowController = new FlowController({
-    stallThresholdMs: 1000,
-    enableFillers: true,
-    fillerPhrases: ['um', 'let me think', 'hmm'],
-    onFillerInjected: (filler) => {
-      fillersCount++;
-      addToOutput(cleanOutputEl, filler, 'filler');
-      updateStats();
-    },
-  });
+  let turn;
+  const source = async function* (signal) {
+    activateStep('step-llm');
+    turn.recordStage({ stage: 'llm', phase: 'start' });
+    await new Promise((resolve) => setTimeout(resolve, 900));
 
-  // 3. Voice Auditor
-  const auditor = new VoiceAuditor({
-    enableRealtime: true,
-  });
-
-  try {
-    // Create pipeline: LLM → Sanitizer → Flow → Monitor
-    const llmStream = mockLLMStream();
-
-    // Sanitize
-    activateStep('step-sanitizer');
-    const sanitized = sanitizer.sanitizeStream(llmStream);
-
-    // Flow control
-    activateStep('step-flow');
-    const controlled = flowController.wrap(sanitized);
-
-    // Monitor
-    activateStep('step-monitor');
-    const monitored = auditor.track('demo-pipeline', controlled);
-
-    // Process stream
-    for await (const chunk of monitored) {
-      if (firstChunkTime === null) {
-        firstChunkTime = Date.now() - startTime;
+    let first = true;
+    for (const delta of response.match(/.{1,14}/gs) ?? []) {
+      if (signal.aborted) return;
+      if (first) {
+        turn.recordStage({ stage: 'llm', phase: 'first-output' });
+        first = false;
       }
+      addToOutput(rawOutput, delta, 'text');
+      yield delta;
+      await new Promise((resolve) => setTimeout(resolve, 60));
+    }
+    turn.recordStage({ stage: 'llm', phase: 'end' });
+  };
 
-      // Show raw (unsanitized) output
-      // We'll simulate this by showing with markdown
-      const rawChunk = chunk; // In real scenario, this would be pre-sanitized
-      addToOutput(rawOutputEl, rawChunk, 'text');
-      rawTotalLength += rawChunk.length;
-
-      // Show cleaned output
-      addToOutput(cleanOutputEl, chunk, 'text');
-      cleanTotalLength += chunk.length;
-
-      chunksCount++;
-      updateStats();
+  turn = pipeline.startTurn({ id: 'browser-demo', source });
+  try {
+    for await (const event of turn.events) {
+      if (event.type === 'stall.cue.requested') {
+        cueRequests++;
+        addToOutput(speechOutput, event.text, 'filler');
+      }
+      if (event.type === 'speech.segment') {
+        activateStep('step-sanitizer');
+        await new Promise((resolve) => setTimeout(resolve, 80));
+        activateStep('step-flow');
+        addToOutput(speechOutput, event.segment.text, 'text');
+        turn.acknowledgePlayback({
+          segmentId: event.segment.id,
+          charactersPlayed: Array.from(event.segment.text).length,
+          audioMs: 80,
+        });
+      }
     }
 
-    // Final step - TTS ready
+    activateStep('step-monitor');
+    const result = await turn.result;
     activateStep('step-tts');
-
-    // Calculate chars removed (approximate)
-    charsRemoved = rawTotalLength - cleanTotalLength;
-
-    // Show final stats
-    statsEl.style.display = 'grid';
-    updateFinalStats();
+    const metrics = result.metrics;
+    document.getElementById('stat-ttft').textContent =
+      `${Math.round(metrics.timeToFirstInputDeltaMs ?? 0)}ms`;
+    document.getElementById('stat-duration').textContent =
+      `${Math.round(metrics.totalDurationMs)}ms`;
+    document.getElementById('stat-chunks').textContent = metrics.chunkCount;
+    document.getElementById('stat-fillers').textContent = cueRequests;
+    document.getElementById('stat-chars-removed').textContent =
+      response.length - result.heardText.length;
+    document.getElementById('stat-reduction').textContent =
+      `${Math.round((1 - result.heardText.length / response.length) * 100)}%`;
+    stats.style.display = 'grid';
   } catch (error) {
     console.error('Pipeline error:', error);
-  }
-
-  // Re-enable button
-  startBtn.disabled = false;
-  isRunning = false;
-
-  // Helper functions
-  function addToOutput(container, text, type) {
-    const span = document.createElement('span');
-    span.className = `chunk chunk-${type}`;
-    span.textContent = text;
-    container.appendChild(span);
-  }
-
-  function updateStats() {
-    const duration = Date.now() - startTime;
-    document.getElementById('stat-duration').textContent = `${duration}ms`;
-    document.getElementById('stat-chunks').textContent = chunksCount;
-    document.getElementById('stat-fillers').textContent = fillersCount;
-    if (firstChunkTime !== null) {
-      document.getElementById('stat-ttft').textContent = `${firstChunkTime}ms`;
-    }
-  }
-
-  function updateFinalStats() {
-    updateStats();
-
-    // Calculate reduction
-    const reduction = rawTotalLength > 0 ? ((charsRemoved / rawTotalLength) * 100).toFixed(1) : 0;
-
-    document.getElementById('stat-chars-removed').textContent = charsRemoved;
-    document.getElementById('stat-reduction').textContent = `${reduction}%`;
-
-    // Get auditor metrics
-    const metrics = auditor.getMetrics();
-    if (metrics.length > 0) {
-      const metric = metrics[0];
-      document.getElementById('stat-ttft').textContent = `${metric.metrics.timeToFirstToken}ms`;
-      document.getElementById('stat-duration').textContent = `${metric.metrics.totalDuration}ms`;
-    }
+  } finally {
+    startButton.disabled = false;
+    isRunning = false;
   }
 };
 
-// Initialize
-console.log('vocal-stack Full Pipeline Demo loaded!');
-console.log('Click "Run Complete Pipeline" to see all modules working together.');
+console.log('vocal-stack v2 reliability demo loaded');

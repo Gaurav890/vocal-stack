@@ -4,12 +4,14 @@ import { MetricsCollector } from './metrics-collector';
 import type { AuditorConfig, ExportFormat, MetricsSummary, VoiceMetric } from './types';
 
 /**
- * Voice latency auditor and profiler
+ * Voice latency auditor and profiler.
+ * @deprecated Use TelemetrySink and VoiceTurn.recordStage() from vocal-stack/telemetry and /turn.
  */
 export class VoiceAuditor {
   private readonly config: Required<AuditorConfig>;
   private readonly collector: MetricsCollector;
   private activeMetrics = new Map<string, VoiceMetric>();
+  private activeMonotonicStarts = new Map<string, number>();
 
   constructor(config: AuditorConfig = {}) {
     this.config = {
@@ -38,6 +40,7 @@ export class VoiceAuditor {
       metrics: {
         timeToFirstToken: null,
         totalDuration: null,
+        chunkCount: 0,
         tokenCount: 0,
         averageTokenLatency: null,
       },
@@ -45,12 +48,11 @@ export class VoiceAuditor {
     };
 
     this.activeMetrics.set(id, metric);
+    this.activeMonotonicStarts.set(id, globalThis.performance?.now() ?? Date.now());
     return metric;
   }
 
-  /**
-   * Record first token received
-   */
+  /** Record the first arbitrary source chunk. */
   recordFirstToken(id: string): void {
     const metric = this.activeMetrics.get(id);
     if (!metric) {
@@ -58,12 +60,16 @@ export class VoiceAuditor {
     }
 
     if (metric.firstTokenReceivedTime === null) {
+      const now = Date.now();
+      const monotonicNow = globalThis.performance?.now() ?? now;
+      const started = this.activeMonotonicStarts.get(id) ?? monotonicNow;
       const updated: VoiceMetric = {
         ...metric,
-        firstTokenReceivedTime: Date.now(),
+        firstTokenReceivedTime: now,
         metrics: {
           ...metric.metrics,
-          timeToFirstToken: Date.now() - metric.startTime,
+          timeToFirstToken: monotonicNow - started,
+          chunkCount: 1,
           tokenCount: 1,
         },
       };
@@ -75,9 +81,7 @@ export class VoiceAuditor {
     }
   }
 
-  /**
-   * Record token received
-   */
+  /** Record another arbitrary source chunk. */
   recordToken(id: string): void {
     const metric = this.activeMetrics.get(id);
     if (!metric) {
@@ -89,6 +93,7 @@ export class VoiceAuditor {
       lastTokenReceivedTime: Date.now(),
       metrics: {
         ...metric.metrics,
+        chunkCount: (metric.metrics.chunkCount ?? metric.metrics.tokenCount) + 1,
         tokenCount: metric.metrics.tokenCount + 1,
       },
     };
@@ -104,14 +109,15 @@ export class VoiceAuditor {
       throw new MonitorError(`No active metric found for id ${id}`);
     }
 
-    const lastTime = metric.lastTokenReceivedTime ?? Date.now();
-    const totalDuration = lastTime - metric.startTime;
+    const monotonicNow = globalThis.performance?.now() ?? Date.now();
+    const totalDuration = monotonicNow - (this.activeMonotonicStarts.get(id) ?? monotonicNow);
     const avgLatency =
       metric.metrics.tokenCount > 0 ? totalDuration / metric.metrics.tokenCount : null;
 
     const completed: VoiceMetric = {
       ...metric,
       completed: true,
+      outcome: 'completed',
       metrics: {
         ...metric.metrics,
         totalDuration,
@@ -120,6 +126,7 @@ export class VoiceAuditor {
     };
 
     this.activeMetrics.delete(id);
+    this.activeMonotonicStarts.delete(id);
     this.collector.addMetric(completed);
 
     if (this.config.enableRealtime) {
@@ -139,20 +146,46 @@ export class VoiceAuditor {
   ): AsyncIterable<string> {
     this.startTracking(id, tags);
 
-    let firstToken = true;
+    let firstChunk = true;
     try {
       for await (const chunk of input) {
-        if (firstToken) {
+        if (firstChunk) {
           this.recordFirstToken(id);
-          firstToken = false;
+          firstChunk = false;
         } else {
           this.recordToken(id);
         }
         yield chunk;
       }
-    } finally {
       this.completeTracking(id);
+    } catch (error) {
+      this.failTracking(id);
+      throw error;
     }
+  }
+
+  private failTracking(id: string): VoiceMetric {
+    const metric = this.activeMetrics.get(id);
+    if (!metric) throw new MonitorError(`No active metric found for id ${id}`);
+
+    const monotonicNow = globalThis.performance?.now() ?? Date.now();
+    const totalDuration = monotonicNow - (this.activeMonotonicStarts.get(id) ?? monotonicNow);
+    const failed: VoiceMetric = {
+      ...metric,
+      completed: false,
+      outcome: 'failed',
+      metrics: {
+        ...metric.metrics,
+        totalDuration,
+        averageTokenLatency:
+          metric.metrics.tokenCount > 0 ? totalDuration / metric.metrics.tokenCount : null,
+      },
+    };
+    this.activeMetrics.delete(id);
+    this.activeMonotonicStarts.delete(id);
+    this.collector.addMetric(failed);
+    if (this.config.enableRealtime) this.config.onMetric(failed);
+    return failed;
   }
 
   /**
@@ -190,6 +223,7 @@ export class VoiceAuditor {
    */
   clear(): void {
     this.activeMetrics.clear();
+    this.activeMonotonicStarts.clear();
     this.collector.clear();
   }
 }

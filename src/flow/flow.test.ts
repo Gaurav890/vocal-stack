@@ -410,6 +410,50 @@ describe('FlowController', () => {
   });
 });
 
+describe('FlowController interruption regressions', () => {
+  it('settles a pending next call immediately on interrupt', async () => {
+    const returned = vi.fn();
+    const source: AsyncIterable<string> = {
+      [Symbol.asyncIterator]: () => ({
+        next: () => new Promise<IteratorResult<string>>(() => {}),
+        return: () => {
+          returned();
+          return Promise.resolve({ value: undefined, done: true });
+        },
+      }),
+    };
+    const controller = new FlowController();
+    const iterator = controller.wrap(source)[Symbol.asyncIterator]();
+    const pending = iterator.next();
+    await Promise.resolve();
+    controller.interrupt();
+
+    await expect(pending).resolves.toEqual({ value: undefined, done: true });
+    expect(returned).toHaveBeenCalledOnce();
+  });
+
+  it('can be reused after a source failure', async () => {
+    const controller = new FlowController();
+    async function* failing(): AsyncIterable<string> {
+      yield 'first';
+      throw new Error('source failed');
+    }
+
+    await expect(async () => {
+      for await (const _chunk of controller.wrap(failing())) {
+        // consume
+      }
+    }).rejects.toThrow('Flow control error');
+
+    async function* healthy(): AsyncIterable<string> {
+      yield 'recovered';
+    }
+    const recovered: string[] = [];
+    for await (const chunk of controller.wrap(healthy())) recovered.push(chunk);
+    expect(recovered).toEqual(['recovered']);
+  });
+});
+
 describe('withFlowControl()', () => {
   it('should wrap stream with flow control', async () => {
     async function* mockStream() {

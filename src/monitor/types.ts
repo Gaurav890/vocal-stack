@@ -29,9 +29,13 @@ export interface VoiceMetric {
   readonly firstTokenReceivedTime: number | null;
   readonly lastTokenReceivedTime: number | null;
   readonly completed: boolean;
+  readonly outcome?: 'completed' | 'failed';
   readonly metrics: {
     readonly timeToFirstToken: number | null; // ms
     readonly totalDuration: number | null; // ms
+    /** Number of arbitrary source chunks observed. */
+    readonly chunkCount?: number;
+    /** @deprecated Alias for chunkCount. This is not a model token count. */
     readonly tokenCount: number;
     readonly averageTokenLatency: number | null; // ms
   };

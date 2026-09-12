@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["node"],
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noEmit": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "skipLibCheck": true,
+    "paths": {
+      "vocal-stack": ["./src/index.ts"],
+      "vocal-stack/*": ["./src/*/index.ts"]
+    }
+  },
+  "include": ["recipes/**/*.ts", "examples/**/*.ts"]
+}

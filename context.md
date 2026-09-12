@@ -1,35 +1,37 @@
-🤖 CLAUDE.md - vocal-stack Constitution
-🎯 Project Vision
-vocal-stack is a high-performance utility library for developers building Voice AI agents. It focuses on "The Last Mile": transforming LLM text into speech-optimized strings, managing latency with fillers, and handling barge-in logic. It is headless, framework-agnostic, and optimized for speed.[6]
-🛠 Tech Stack
-Runtime: Node.js (ESM)
-Language: TypeScript (Strict Mode)
-Bundler: tsup (Generates ESM & CJS)
-Linter/Formatter: biome
-Testing: vitest
-Versioning: changesets
-📁 Folder Structure
-src/: Core logic
-sanitizer/: Text processing and markdown stripping
-flow/: Latency management and filler injection
-monitor/: Latency auditing and profiling
-index.ts: Public API entry point
-tests/: Unit and integration tests (parallel to src)
-docs/: Deep-dive architectural guides
-📜 Coding Rules
-Naming: Use PascalCase for classes, camelCase for functions/variables.
-Exports: Prefer named exports over default exports.
-Types: Always define interfaces for configuration objects. Use readonly for state properties.
-Testing: Every new feature must have a .test.ts file in the same directory or the tests/ folder. Aim for 90%+ coverage.
-Error Handling: Use custom error classes (e.g., VocalStackError) for predictable failure modes.
-Async: Use Stream or AsyncIterable for text-processing utilities to minimize TTFT (Time to First Token).
-🚀 Common Commands
-Install: npm install[7]
-Build: npm run build (runs tsup)
-Test: npm test or npx vitest
-Lint/Format: npm run lint or npx @biomejs/biome check --write .
-Dev: npm run dev (watch mode)
-💡 AI Guidance (Project Context)
-Markdown Stripping: When working on the SpeechSanitizer, remember that TTS engines fail on URLs, code blocks, and complex punctuation. Focus on "Speakability."
-Filler Logic: Fillers should be injected only when a stream stall is detected (>700ms). Never inject fillers if the first chunk of real data has already been sent.
-Latency Profiling: The VoiceAudit tool should measure startTime to firstTokenReceived and firstTokenReceived to lastTokenReceived.
+# Project context
+
+## Product boundary
+
+`vocal-stack` is a small, provider-neutral reliability layer for custom TypeScript voice
+pipelines. Its core responsibilities are:
+
+- incremental, chunk-invariant text normalization;
+- natural and bounded speech segmentation;
+- immediate local barge-in settlement and upstream cancellation;
+- generated-versus-heard text accounting;
+- content-free lifecycle and latency telemetry; and
+- deterministic failure, stall, and interruption scenarios.
+
+VAD, STT/TTS clients, WebRTC, telephony, audio DSP, semantic end-of-turn detection, model
+orchestration, and hosted dashboards are out of scope.
+
+## Engineering constraints
+
+- Node.js 22, 24, and 26 plus modern browsers.
+- Strict TypeScript and named exports.
+- Neutral ESM and Node ESM/CJS builds.
+- Zero production dependencies.
+- Provider integrations are compile-tested recipes, not runtime adapters.
+- Existing v1 entry points remain compatible and deprecated throughout v2.
+- Default telemetry must not contain prompts, transcripts, tool arguments, or speech text.
+- Performance claims require a checked-in reproducible benchmark.
+
+## Required checks
+
+```sh
+npm run check
+npm run test:browser
+npm audit
+```
+
+Stable publishing and release creation require explicit maintainer approval.

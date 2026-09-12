@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.5.13/schema.json",
   "vcs": {
     "enabled": true,
     "clientKind": "git",
@@ -7,7 +7,7 @@
   },
   "files": {
     "ignoreUnknown": false,
-    "ignore": ["node_modules", "dist", "coverage"]
+    "includes": ["**", "!**/node_modules", "!**/dist", "!**/coverage"]
   },
   "formatter": {
     "enabled": true,
@@ -18,9 +18,12 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true,
+      "preset": "recommended",
       "complexity": {
-        "noExcessiveCognitiveComplexity": "warn",
+        "noExcessiveCognitiveComplexity": {
+          "level": "warn",
+          "options": { "maxAllowedComplexity": 25 }
+        },
         "noUselessEmptyExport": "error"
       },
       "correctness": {
@@ -34,17 +37,17 @@
       },
       "suspicious": {
         "noExplicitAny": "warn",
-        "noConsoleLog": "warn"
+        "noConsole": { "level": "warn", "options": { "allow": ["log"] } }
       }
     }
   },
   "overrides": [
     {
-      "include": ["examples/**/*.js", "stackblitz-demos/**/*.js"],
+      "includes": ["**/examples/**/*.js", "**/stackblitz-demos/**/*.js"],
       "linter": {
         "rules": {
           "suspicious": {
-            "noConsoleLog": "off"
+            "noConsole": { "level": "off", "options": { "allow": ["log"] } }
           },
           "complexity": {
             "noForEach": "off"
@@ -60,7 +63,5 @@
       "trailingCommas": "es5"
     }
   },
-  "organizeImports": {
-    "enabled": true
-  }
+  "assist": { "actions": { "source": { "organizeImports": "on" } } }
 }

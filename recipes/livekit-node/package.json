@@ -1,0 +1,10 @@
+{
+  "name": "vocal-stack-recipe-livekit-node",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "peerDependencies": {
+    "@livekit/agents": ">=1",
+    "vocal-stack": ">=2"
+  }
+}

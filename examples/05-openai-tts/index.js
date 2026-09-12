@@ -39,7 +39,7 @@ const auditor = new VoiceAuditor({
     console.log(`\n[MONITOR] Request ${metric.id}:`);
     console.log(`  - Time to first token: ${metric.metrics.timeToFirstToken}ms`);
     console.log(`  - Total duration: ${metric.metrics.totalDuration}ms`);
-    console.log(`  - Tokens processed: ${metric.metrics.tokenCount}`);
+    console.log(`  - Chunks processed: ${metric.metrics.chunkCount}`);
   },
 });
 

@@ -4,6 +4,7 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
+    exclude: ['tests/browser/**', '**/node_modules/**', '**/dist/**'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html', 'lcov'],
@@ -12,7 +13,7 @@ export default defineConfig({
         'dist/',
         'examples/',
         'stackblitz-demos/',
-        'tests/',
+        'tests/**',
         '**/*.test.ts',
         '**/*.config.ts',
         '**/types.ts',

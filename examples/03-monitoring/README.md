@@ -47,9 +47,9 @@ For more control:
 ```javascript
 auditor.startTracking('my-request');
 // ... processing ...
-auditor.recordToken('my-request');  // First token
+auditor.recordToken('my-request');  // First source chunk
 // ... more processing ...
-auditor.recordToken('my-request');  // Additional tokens
+auditor.recordToken('my-request');  // Additional source chunks
 const metric = auditor.completeTracking('my-request');
 ```
 
@@ -98,7 +98,7 @@ You'll see four examples:
 
 - **Time to First Token (TTFT)** - Latency from start to first chunk
 - **Total Duration** - Complete processing time
-- **Token Count** - Number of chunks received
+- **Chunk Count** - Number of arbitrary source chunks received
 - **Average Token Latency** - Mean time per token
 
 ## Use Cases

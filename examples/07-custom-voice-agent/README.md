@@ -1,6 +1,7 @@
 # Custom Voice Agent Example
 
-This example demonstrates how to build a **production-ready conversational voice agent** using vocal-stack. This is the most comprehensive example, showing all features working together in a real-world application.
+This deprecated v1 compatibility example demonstrates a complete conversational voice agent. New
+applications should use the v2 turn pipeline and provider recipes.
 
 ## What it demonstrates
 
@@ -37,7 +38,7 @@ A complete, production-ready voice agent with:
 ## Prerequisites
 
 1. OpenAI API key (for GPT-4 and optionally TTS)
-2. Node.js 18+ installed
+2. Node.js 22+ installed
 
 ## Setup
 

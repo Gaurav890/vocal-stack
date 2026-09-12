@@ -13,7 +13,7 @@ jobs:
 
     strategy:
       matrix:
-        node: [18, 20, 22]
+        node: [22.12, 24, 26]
 
     steps:
       - name: Checkout code
@@ -34,6 +34,9 @@ jobs:
       - name: Run type check
         run: npm run typecheck
 
+      - name: Compile provider recipes
+        run: npm run typecheck:recipes
+
       - name: Run tests
         run: npm test
 
@@ -51,7 +54,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: 'npm'
 
       - name: Install dependencies
@@ -66,3 +69,64 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage/lcov.info
           fail_ci_if_error: false
+
+  package:
+    name: Packed artifact
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build package
+        run: npm run build
+
+      - name: Validate package
+        run: npm run package:check
+
+      - name: Enforce size limits
+        run: npm run package:size
+
+      - name: Test examples with packed artifact
+        run: npm run examples:check
+
+      - name: Audit development toolchain
+        run: npm audit --audit-level=high
+
+  browser:
+    name: Browser smoke (${{ matrix.browser }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        browser: [chromium, firefox, webkit]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install browser
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+
+      - name: Build package
+        run: npm run build
+
+      - name: Run browser smoke test
+        run: npm run test:browser -- --project=${{ matrix.browser }}

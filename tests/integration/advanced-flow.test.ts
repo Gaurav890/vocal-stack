@@ -1,11 +1,12 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { type FlowEvent, FlowManager } from '../../src/flow';
 import { VoiceAuditor } from '../../src/monitor';
 import { SpeechSanitizer } from '../../src/sanitizer';
-import { MockTTSProvider, createMockStream } from '../helpers';
+import { createMockStream, MockTTSProvider } from '../helpers';
 
 describe('Integration: Advanced Flow Control', () => {
   it('should use low-level FlowManager with event handling', async () => {
+    vi.useFakeTimers();
     const manager = new FlowManager({
       stallThresholdMs: 50,
       enableFillers: true,
@@ -24,33 +25,36 @@ describe('Integration: Advanced Flow Control', () => {
       }
     });
 
-    manager.start();
+    try {
+      manager.start();
 
-    // Simulate stall before first chunk
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Cross the exact stall threshold without depending on runner scheduling.
+      await vi.advanceTimersByTimeAsync(50);
 
-    // Process chunks
-    const chunks = ['Hello', 'World'];
-    for (const chunk of chunks) {
-      manager.processChunk(chunk);
-      await tts.send(chunk);
+      const chunks = ['Hello', 'World'];
+      for (const chunk of chunks) {
+        manager.processChunk(chunk);
+        const sent = tts.send(chunk);
+        await vi.advanceTimersByTimeAsync(5);
+        await sent;
+      }
+
+      manager.complete();
+
+      const eventTypes = events.map((event) => event.type);
+      expect(eventTypes).toContain('stall-detected');
+      expect(eventTypes).toContain('filler-injected');
+      expect(eventTypes).toContain('first-chunk');
+      expect(eventTypes).toContain('chunk-processed');
+      expect(eventTypes).toContain('completed');
+
+      const ttsText = tts.getText();
+      expect(ttsText).toContain('um');
+      expect(ttsText).toContain('Hello');
+      expect(ttsText).toContain('World');
+    } finally {
+      vi.useRealTimers();
     }
-
-    manager.complete();
-
-    // Verify events
-    const eventTypes = events.map((e) => e.type);
-    expect(eventTypes).toContain('stall-detected');
-    expect(eventTypes).toContain('filler-injected');
-    expect(eventTypes).toContain('first-chunk');
-    expect(eventTypes).toContain('chunk-processed');
-    expect(eventTypes).toContain('completed');
-
-    // Verify TTS received filler + chunks
-    const ttsText = tts.getText();
-    expect(ttsText).toContain('um'); // Filler
-    expect(ttsText).toContain('Hello');
-    expect(ttsText).toContain('World');
   });
 
   it('should handle complex barge-in with buffer inspection', async () => {

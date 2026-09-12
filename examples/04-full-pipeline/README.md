@@ -1,6 +1,7 @@
 # Full Pipeline Example
 
-This example demonstrates how to combine **all three modules** (Sanitizer, Flow Control, and Monitor) into a complete, production-ready voice AI pipeline.
+This compatibility example demonstrates how the deprecated v1 Sanitizer, Flow Control, and Monitor
+modules compose. New applications should use the v2 quickstart in the repository root.
 
 ## What it demonstrates
 

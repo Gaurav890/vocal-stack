@@ -3,7 +3,8 @@ import { ruleRegistry } from './rules';
 import type { SanitizationResult, SanitizerConfig, SanitizerPlugin } from './types';
 
 /**
- * Speech sanitizer that transforms text for TTS optimization
+ * Speech sanitizer that transforms text for TTS optimization.
+ * @deprecated Use normalizeForSpeech() or normalizeSpeechStream() from vocal-stack/text.
  */
 export class SpeechSanitizer {
   private readonly config: Required<SanitizerConfig>;
@@ -46,6 +47,17 @@ export class SpeechSanitizer {
         );
       }
       result = transformed;
+    }
+    return result;
+  }
+
+  /**
+   * Apply plugin transformations, awaiting asynchronous plugins in priority order.
+   */
+  private async applyPluginsAsync(text: string): Promise<string> {
+    let result = text;
+    for (const plugin of this.plugins) {
+      result = await plugin.transform(result);
     }
     return result;
   }
@@ -104,6 +116,26 @@ export class SpeechSanitizer {
   }
 
   /**
+   * Sanitize a string with support for synchronous and asynchronous plugins.
+   */
+  async sanitizeAsync(text: string): Promise<string> {
+    if (!text || text.trim().length === 0) return '';
+
+    try {
+      let result = this.applyRules(text);
+      result = await this.applyPluginsAsync(result);
+      result = this.applyCustomReplacements(result);
+      return this.cleanupWhitespace(result);
+    } catch (error) {
+      if (error instanceof SanitizerError) throw error;
+      throw new SanitizerError('Failed to sanitize text', {
+        originalText: text.substring(0, 100),
+        error,
+      });
+    }
+  }
+
+  /**
    * Sanitize with detailed result metadata
    */
   sanitizeWithMetadata(text: string): SanitizationResult {
@@ -125,32 +157,16 @@ export class SpeechSanitizer {
    * Sanitize a stream of text chunks (AsyncIterable)
    */
   async *sanitizeStream(input: AsyncIterable<string>): AsyncIterable<string> {
-    let buffer = '';
-    const sentenceBoundary = /[.!?]\s+/;
-
-    for await (const chunk of input) {
-      buffer += chunk;
-
-      // Process complete sentences
-      const sentences = buffer.split(sentenceBoundary);
-      buffer = sentences.pop() ?? ''; // Keep incomplete sentence
-
-      for (const sentence of sentences) {
-        if (sentence.trim()) {
-          yield `${this.sanitize(sentence)} `;
-        }
-      }
-    }
-
-    // Process remaining buffer
-    if (buffer.trim()) {
-      yield this.sanitize(buffer);
-    }
+    let source = '';
+    for await (const chunk of input) source += chunk;
+    const sanitized = await this.sanitizeAsync(source);
+    if (sanitized) yield sanitized;
   }
 }
 
 /**
  * Convenience function for one-off sanitization
+ * @deprecated Use normalizeForSpeech() from vocal-stack/text.
  */
 export function sanitizeForSpeech(text: string, config?: SanitizerConfig): string {
   const sanitizer = new SpeechSanitizer(config);

@@ -21,7 +21,7 @@ This example demonstrates real-world integration of **vocal-stack** with **Eleve
 2. **OpenAI API key**
    - For GPT-4 access
 
-3. Node.js 18+ installed
+3. Node.js 22+ installed
 
 ## Setup
 
@@ -266,7 +266,7 @@ for await (const audioChunk of audioStream) {
 - **Audiobook Generation**: Convert books to high-quality audio
 - **Gaming**: Voice-enabled NPCs with unique voices
 - **Education**: Interactive tutors with engaging voices
-- **Podcasts**: AI-generated podcast content
+- **Podcasts**: Dynamically generated podcast content
 - **Accessibility**: Screen readers with premium voices
 - **Voicemail/IVR**: Professional phone systems
 
