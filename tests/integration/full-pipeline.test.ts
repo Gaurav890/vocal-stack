@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { FlowController } from '../../src/flow';
 import { VoiceAuditor } from '../../src/monitor';
 import { SpeechSanitizer } from '../../src/sanitizer';
@@ -50,6 +50,8 @@ describe('Integration: Full Pipeline', () => {
   });
 
   it('should handle stalls with filler injection', async () => {
+    vi.useFakeTimers();
+
     const flowController = new FlowController({
       stallThresholdMs: 50,
       enableFillers: true,
@@ -61,24 +63,33 @@ describe('Integration: Full Pipeline', () => {
 
     const auditor = new VoiceAuditor();
 
-    // Create stream with stall before first chunk
-    const chunks = ['Hello', 'World'];
-    const stalledStream = createStallStream(chunks, [0], 1000);
+    try {
+      // Cross the stall threshold before the first chunk without relying on
+      // wall-clock scheduling differences between Node versions.
+      const chunks = ['Hello', 'World'];
+      const stalledStream = createStallStream(chunks, [0], 51);
+      const controlled = flowController.wrap(stalledStream);
+      const monitored = auditor.track('stall-test', controlled);
 
-    const controlled = flowController.wrap(stalledStream);
-    const monitored = auditor.track('stall-test', controlled);
+      const result: string[] = [];
+      const consume = (async () => {
+        for await (const chunk of monitored) {
+          result.push(chunk);
+        }
+      })();
 
-    const result: string[] = [];
-    for await (const chunk of monitored) {
-      result.push(chunk);
+      await vi.advanceTimersByTimeAsync(51);
+      await consume;
+
+      expect(result).toEqual(['Hello', 'World']);
+
+      // Verify filler was injected
+      const flowStats = flowController.getStats();
+      expect(flowStats.fillersInjected).toBeGreaterThan(0);
+      expect(flowStats.stallsDetected).toBeGreaterThan(0);
+    } finally {
+      vi.useRealTimers();
     }
-
-    expect(result).toEqual(['Hello', 'World']);
-
-    // Verify filler was injected
-    const flowStats = flowController.getStats();
-    expect(flowStats.fillersInjected).toBeGreaterThan(0);
-    expect(flowStats.stallsDetected).toBeGreaterThan(0);
   });
 
   it('should handle barge-in interruption', async () => {
