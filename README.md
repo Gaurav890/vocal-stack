@@ -1,18 +1,50 @@
+<div align="center">
+
 # vocal-stack
 
-Provider-neutral reliability primitives for custom TypeScript voice pipelines.
+**Provider-neutral reliability primitives for TypeScript voice pipelines.**
 
-`vocal-stack` sits between a model text stream and your TTS/audio layer. It does not replace your
-agent framework, transport, VAD, STT, TTS, or telephony provider. It handles the failure-prone seam
-between them:
+Turn unpredictable model deltas into speech-safe segments, interrupt output promptly, distinguish
+generated text from what listeners actually heard, and test voice timelines without real delays.
 
-- turn arbitrary model deltas into safe, natural TTS segments;
-- stop local output immediately when a listener interrupts;
-- distinguish generated text from text confirmed as played;
-- normalize lifecycle and latency telemetry across providers; and
-- replay stalls, failures, and barge-in timelines in deterministic tests.
+[![npm version](https://img.shields.io/npm/v/vocal-stack.svg)](https://www.npmjs.com/package/vocal-stack)
+[![npm downloads](https://img.shields.io/npm/dm/vocal-stack.svg)](https://www.npmjs.com/package/vocal-stack)
+[![CI](https://github.com/Gaurav890/vocal-stack/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Gaurav890/vocal-stack/actions/workflows/ci.yml)
+[![minified and gzipped size](https://img.shields.io/bundlephobia/minzip/vocal-stack)](https://bundlephobia.com/package/vocal-stack)
+[![Node.js](https://img.shields.io/node/v/vocal-stack.svg)](https://www.npmjs.com/package/vocal-stack)
+[![license](https://img.shields.io/npm/l/vocal-stack.svg)](./LICENSE)
 
-The package has no runtime dependencies and supports Node.js 22, 24, and 26 plus modern browsers.
+[Quick start](#quick-start) · [Why vocal-stack?](#why-vocal-stack) ·
+[API](https://github.com/Gaurav890/vocal-stack/blob/main/docs/API.md) ·
+[Recipes](https://github.com/Gaurav890/vocal-stack/tree/main/recipes) ·
+[Migration guide](https://github.com/Gaurav890/vocal-stack/blob/main/docs/MIGRATION.md)
+
+</div>
+
+## Why vocal-stack?
+
+A model emits arbitrary text chunks. A TTS provider needs meaningful text. A listener can interrupt
+at any moment. Most custom voice pipelines connect those parts with application-specific buffering,
+cancellation, and timing code that is difficult to test.
+
+`vocal-stack` owns that narrow reliability layer:
+
+| Voice-pipeline problem | What vocal-stack provides |
+| --- | --- |
+| Markdown, URLs, or sentences split across model chunks | Incremental normalization that is invariant to chunk boundaries |
+| Tiny deltas sound unnatural when sent directly to TTS | Unicode-safe sentence, clause, word, timeout, and maximum-length segmentation |
+| Barge-in waits for a stalled upstream iterator | Immediate local settlement plus source abort and iterator/reader cancellation |
+| Generated text is mistaken for audio the listener heard | Monotonic, grapheme-counted playback acknowledgements |
+| Provider metrics use incompatible names and clocks | Privacy-safe stage markers and normalized latency metrics |
+| Stall and interruption tests depend on real time | A virtual clock, declarative scenarios, and fluent assertions |
+
+It is not another agent framework. Bring your own model, VAD, STT, TTS, transport, and
+orchestration. The package has **zero runtime dependencies** and works with Node.js 22+, ESM,
+CommonJS, and modern browsers.
+
+```text
+VAD / STT → model text stream → vocal-stack → TTS → audio player
+```
 
 ## Install
 
@@ -20,106 +52,140 @@ The package has no runtime dependencies and supports Node.js 22, 24, and 26 plus
 npm install vocal-stack
 ```
 
-## Quick start
-
-```ts
-import { createVoicePipeline } from 'vocal-stack/turn';
-
-const pipeline = createVoicePipeline({
-  text: {
-    locale: 'en',
-    mode: 'balanced',
-    minChars: 24,
-    targetChars: 120,
-    maxChars: 240,
-    maxWaitMs: 250,
-  },
-  stallCues: { enabled: false },
-  telemetry: { sinks: [myTelemetrySink] },
-});
-
-const turn = pipeline.startTurn({
-  id: 'turn-123',
-  source: (signal) => createModelTextStream({ signal }),
-});
-
-for await (const event of turn.events) {
-  if (event.type === 'speech.segment') {
-    await tts.send(event.segment.text);
-  }
-
-  if (event.type === 'stall.cue.requested') {
-    await playPreparedCue(event.text);
-  }
-}
-
-const result = await turn.result;
+```sh
+pnpm add vocal-stack
 ```
 
-Call `turn.interrupt({ reason: 'barge-in' })` from your VAD or input-activity handler while the
-event loop is active.
+```sh
+yarn add vocal-stack
+```
 
-Call `acknowledgePlayback` from the audio player as audio is confirmed—not when text is sent to a
-TTS provider:
+## Quick start
+
+This complete example feeds chunked model output into a turn, plays every speech segment, and
+acknowledges only the text confirmed as played:
 
 ```ts
 import { countSpeechCharacters } from 'vocal-stack/text';
+import { createVoicePipeline } from 'vocal-stack/turn';
 
-turn.acknowledgePlayback({
-  segmentId: 'turn-123-segment-1',
-  charactersPlayed: 42,
-  audioMs: 1_800,
-});
+async function* modelText(signal: AbortSignal): AsyncIterable<string> {
+  for (const delta of [
+    'Read [the ',
+    'guide](https://example.com) ',
+    'before continuing.',
+  ]) {
+    if (signal.aborted) return;
+    yield delta;
+  }
+}
+
+async function playSegment(text: string): Promise<void> {
+  // Replace this with your TTS and audio-player integration.
+  console.log(text);
+}
+
+async function main(): Promise<void> {
+  const pipeline = createVoicePipeline({
+    text: { mode: 'balanced' },
+    stallCues: { enabled: false },
+  });
+
+  const turn = pipeline.startTurn({
+    id: 'answer-1',
+    source: modelText,
+  });
+
+  for await (const event of turn.events) {
+    if (event.type !== 'speech.segment') continue;
+
+    await playSegment(event.segment.text);
+    turn.acknowledgePlayback({
+      segmentId: event.segment.id,
+      charactersPlayed: countSpeechCharacters(event.segment.text),
+    });
+  }
+
+  const result = await turn.result;
+  console.log(result.outcome);   // "completed"
+  console.log(result.heardText); // "Read the guide before continuing."
+}
+
+void main();
 ```
 
-Use `countSpeechCharacters(text, locale)` when acknowledging a full segment; it matches the
-Unicode-grapheme counting used for validation.
+Call `turn.interrupt({ reason: 'barge-in' })` from your VAD or input-activity handler. The turn
+closes its local event stream immediately even when the upstream source ignores cancellation.
 
-`result.generatedText` contains received model text. `result.heardText` contains only acknowledged
-graphemes. Outcomes are always explicit: `completed`, `interrupted`, or `failed`.
+## Use only what you need
 
-## Text reliability
+Each stable v2 capability has a dedicated entry point. Importing the root package is also
+supported.
 
-Use the text API independently when you already own turn orchestration:
+| Entry point | Use it for |
+| --- | --- |
+| `vocal-stack/text` | Streaming normalization and speech segmentation |
+| `vocal-stack/turn` | Turn lifecycle, interruption, and playback acknowledgement |
+| `vocal-stack/telemetry` | Stage markers, metrics, sinks, and JSON/JSONL export |
+| `vocal-stack/testing` | Virtual time, scenario execution, and assertions |
+
+The v1 entry points—`vocal-stack/sanitizer`, `vocal-stack/flow`, and
+`vocal-stack/monitor`—remain available as deprecated compatibility APIs throughout v2.
+
+## Text that is safe to speak
+
+Use the text layer independently when you already own turn orchestration:
 
 ```ts
-import {
-  normalizeForSpeech,
-  normalizeSpeechStream,
-  segmentSpeechStream,
-} from 'vocal-stack/text';
+import { normalizeForSpeech, segmentSpeechStream } from 'vocal-stack/text';
 
 normalizeForSpeech('Read [the guide](https://example.com).');
-// "Read the guide."
+// => "Read the guide."
 
-for await (const segment of segmentSpeechStream(modelDeltas, {
+async function* deltas() {
+  yield 'One sentence. The next ';
+  yield 'sentence arrived in another chunk.';
+}
+
+for await (const segment of segmentSpeechStream(deltas(), {
   mode: 'balanced',
   minChars: 24,
   targetChars: 120,
   maxChars: 240,
   maxWaitMs: 250,
 })) {
-  await tts.send(segment.text);
+  console.log(segment.text, segment.boundary);
 }
 ```
 
-Normalization is incremental across source chunk boundaries. It preserves sentence punctuation,
-contractions, link labels, whitespace, emoji, combining marks, and CJK text. Fenced code, images,
-bare URLs, and email addresses are omitted by default. Numbers, dates, currencies, and
-pronunciations are left to the TTS provider.
+Normalization preserves sentence punctuation, contractions, whitespace, Markdown link labels,
+emoji, combining characters, and CJK text across arbitrary chunk boundaries. It omits fenced code,
+images, bare URLs, and email addresses by default. Numbers, dates, currencies, and pronunciations
+remain untouched for the TTS provider.
 
-Balanced mode prefers sentence boundaries, then clauses near the target length, then word
-boundaries. It force-splits only at a Unicode grapheme boundary. `mode: 'source'` forwards
-normalized source deltas without sentence buffering for providers that want token-like input.
+Balanced segmentation prefers complete sentences, then clauses near the target length, then word
+boundaries. It force-splits only at a Unicode grapheme boundary. Use `mode: 'source'` when a provider
+expects low-buffering source deltas.
 
-## Prompt interruption
+## Interruption and heard-text tracking
 
-`interrupt()` performs local settlement before waiting for the provider. It aborts the source
-signal, calls an async iterator's `return()` or a `ReadableStream` reader's `cancel()`, stops local
-timers, suppresses late deltas, and closes the event stream even if upstream ignores cancellation.
-Each turn owns independent state, so one pipeline can safely run concurrent turns.
+Every turn owns independent state, so a pipeline can safely run concurrent responses.
 
-## Telemetry without transcript capture
+`interrupt()`:
+
+- aborts the source signal;
+- cancels a Web `ReadableStream` reader or calls an async iterator's `return()`;
+- stops timers and suppresses late deltas; and
+- resolves the local event stream without waiting for upstream cooperation.
+
+Turn outcomes are explicit: `completed`, `interrupted`, or `failed`. The result separates raw model
+output in `generatedText` from acknowledged playback in `heardText`. Playback acknowledgements must
+be monotonic and within the segment's grapheme length; invalid acknowledgements throw a stable
+`VoicePipelineError`.
+
+## Privacy-safe telemetry
+
+Record provider lifecycle markers without coupling your application to a telemetry backend:
 
 ```ts
 turn.recordStage({ stage: 'llm', phase: 'start', operationId: 'response-1' });
@@ -127,16 +193,18 @@ turn.recordStage({ stage: 'llm', phase: 'first-output', operationId: 'response-1
 turn.recordStage({ stage: 'llm', phase: 'end', operationId: 'response-1' });
 ```
 
-Known stages are `turn-detection`, `stt`, `llm`, `tool`, `tts`, `playback`, and
-`realtime-model`. Namespaced custom stages such as `acme.cache` are supported. Metrics use a
-monotonic clock for durations and a separate wall timestamp for correlation. No prompts,
-transcripts, tool arguments, or speech text enter telemetry events.
+Built-in stages cover `turn-detection`, `stt`, `llm`, `tool`, `tts`, `playback`, and
+`realtime-model`; namespaced custom stages are also supported. Durations use a monotonic clock,
+while separate wall-clock timestamps support cross-system correlation.
 
-Sinks may be synchronous or asynchronous. Sink and diagnostic-listener failures are routed to
-`onSinkError` and cannot fail a turn. JSON and JSONL metric exports are available from
-`vocal-stack/telemetry`.
+Telemetry contains lifecycle, timing, count, and outcome fields—not prompts, transcripts, tool
+arguments, or speech text. Sink failures are isolated from the voice turn. See the
+[telemetry guide](https://github.com/Gaurav890/vocal-stack/blob/main/docs/TELEMETRY.md) for a generic
+OpenTelemetry recipe.
 
-## Deterministic scenarios
+## Deterministic voice tests
+
+Reproduce stalls, partial playback, interruption, and source failure without sleeping in tests:
 
 ```ts
 import { createVoicePipeline } from 'vocal-stack/turn';
@@ -166,41 +234,34 @@ expectVoiceScenario(scenario)
   .toHaveNoPendingTimers();
 ```
 
-Timeline steps cover deltas, stalls, source completion/failure, stage markers, playback
-acknowledgements, consumer cancellation, and interruption.
+Timeline steps also cover source completion/error, stage markers, consumer cancellation, and
+playback acknowledgements. Reusable barge-in, stalled-response, and source-failure scenarios are
+included.
 
 ## Provider recipes
 
-Copyable, compile-checked recipes live in [`recipes`](./recipes):
+Provider SDKs stay out of the runtime dependency graph. Copyable, compile-checked recipes show how
+to connect the package to common voice stacks:
 
-- AI SDK text streaming with ElevenLabs WebSocket TTS;
-- OpenAI Realtime lifecycle events;
-- LiveKit Node metrics/hooks; and
-- Deepgram Flux source-mode streaming and cancellation.
+- [AI SDK + ElevenLabs](https://github.com/Gaurav890/vocal-stack/tree/main/recipes/ai-sdk-elevenlabs)
+- [OpenAI Realtime](https://github.com/Gaurav890/vocal-stack/tree/main/recipes/openai-realtime)
+- [LiveKit Node](https://github.com/Gaurav890/vocal-stack/tree/main/recipes/livekit-node)
+- [Deepgram Flux](https://github.com/Gaurav890/vocal-stack/tree/main/recipes/deepgram-flux)
 
-Provider packages remain outside the core runtime.
+## Documentation
 
-## Package entry points
-
-| Entry point | Purpose |
-| --- | --- |
-| `vocal-stack/text` | normalization and speech segmentation |
-| `vocal-stack/turn` | turn lifecycle, interruption, playback acknowledgement |
-| `vocal-stack/telemetry` | stages, metrics, sinks, JSON/JSONL export |
-| `vocal-stack/testing` | virtual clock, scenario runner, fluent assertions |
-| `vocal-stack/sanitizer` | deprecated v1 compatibility API |
-| `vocal-stack/flow` | deprecated v1 compatibility API |
-| `vocal-stack/monitor` | deprecated v1 compatibility API |
-
-The root export contains both v2 and compatibility APIs. See the executable
-[`v2-quickstart.ts`](./examples/v2-quickstart.ts), [API reference](./docs/API.md), and
-[v1 migration guide](./docs/MIGRATION.md).
+- [API reference](https://github.com/Gaurav890/vocal-stack/blob/main/docs/API.md)
+- [Telemetry and OpenTelemetry](https://github.com/Gaurav890/vocal-stack/blob/main/docs/TELEMETRY.md)
+- [v1 to v2 migration](https://github.com/Gaurav890/vocal-stack/blob/main/docs/MIGRATION.md)
+- [Reproducible benchmarks](https://github.com/Gaurav890/vocal-stack/blob/main/docs/BENCHMARKS.md)
+- [Examples](https://github.com/Gaurav890/vocal-stack/tree/main/examples)
+- [Public roadmap](https://github.com/Gaurav890/vocal-stack/blob/main/ROADMAP.md)
 
 ## Scope
 
 VAD models, semantic end-of-turn detection, STT/TTS clients, WebRTC, telephony, audio DSP, model
 orchestration, and hosted dashboards are intentionally out of scope. Use `vocal-stack` alongside a
-framework such as LiveKit Agents, Pipecat, or an Agents SDK when those capabilities are needed.
+full framework when those capabilities are needed.
 
 ## Development
 
@@ -210,12 +271,16 @@ npm ci
 npm run check
 ```
 
-CI runs Node.js 22.12, 24, and 26, enforces coverage and package-size floors, validates ESM/CJS and
-types from the packed tarball, and runs browser smoke tests in Chromium, Firefox, and WebKit.
+CI tests Node.js 22.12, 24, and 26; enforces coverage and package-size thresholds; validates ESM,
+CommonJS, and types from the packed artifact; compiles provider recipes; audits the development
+toolchain; and runs browser smoke tests in Chromium, Firefox, and WebKit.
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md), [SECURITY.md](./SECURITY.md), and the public
-[roadmap](./ROADMAP.md).
+Contributions are welcome, especially real integration reports, chunk-boundary fixtures, failure
+scenarios, provider recipes, and documentation corrections. Read
+[CONTRIBUTING.md](https://github.com/Gaurav890/vocal-stack/blob/main/CONTRIBUTING.md) before opening a
+pull request. Security reports follow the private process in
+[SECURITY.md](https://github.com/Gaurav890/vocal-stack/blob/main/SECURITY.md).
 
 ## License
 
-MIT
+[MIT](./LICENSE)
