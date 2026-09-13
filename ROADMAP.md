@@ -1,17 +1,35 @@
 # Public roadmap
 
-## v2 release candidate
+`vocal-stack` 2.0.0 is the current stable release. Near-term work is focused on proving the API in
+real applications, tightening documentation, and collecting integration evidence before expanding
+the core.
 
-- Run packed-artifact trials in three external TypeScript voice projects.
-- Validate the four provider recipes against live provider sandboxes.
-- Collect structured API feedback and freeze names before the stable tag.
-- Complete Node 22/24/26 and Chromium/Firefox/WebKit release checks.
+## Now: release validation
 
-## Stable v2
+- Add a repeatable post-release smoke check for the public registry artifact.
+- Dogfood the published package in the AI SDK, OpenAI Realtime, LiveKit, and Deepgram recipes.
+- Run the package in three external TypeScript voice projects and collect structured feedback.
+- Confirm browser behavior in downstream bundlers, not only the repository smoke fixture.
+- Document integration problems as reproducible scenarios or chunk-boundary fixtures.
 
-- Publish only after explicit maintainer approval.
-- Keep `/sanitizer`, `/flow`, and `/monitor` compatibility exports for every v2 release.
-- Prioritize correctness fixtures and integration evidence over additional provider adapters.
+## Next: contributor and release experience
+
+- Configure npm trusted publishing with provenance and an explicit GitHub release approval step.
+- Make every README and provider recipe executable in CI.
+- Add focused integration examples based on real adopter feedback.
+- Publish patch releases for confirmed correctness, typing, packaging, or documentation issues.
+- Define the v2 support policy after the first external integrations complete.
+
+## Later: feedback-driven capabilities
+
+Potential work must be justified by multiple real integrations:
+
+- Additional playback acknowledgement strategies for audio players with coarse progress events.
+- More reusable failure and interruption scenarios.
+- Additional generic telemetry exporters that preserve the content-free default.
+- Segmentation policies for languages and providers not covered by current fixtures.
+
+Provider SDKs should remain in recipes rather than the core runtime.
 
 ## Ninety-day proof targets
 

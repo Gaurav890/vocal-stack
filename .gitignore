@@ -31,10 +31,6 @@ Thumbs.db
 *.swo
 *~
 
-# Changesets
-.changeset/*.md
-!.changeset/README.md
-
 # Testing
 .vitest/
 playwright-report/

@@ -91,4 +91,43 @@ for (const entry of readdirSync(join(root, 'recipes'), { withFileTypes: true }))
   }
 }
 
+const quickstartDirectory = mkdtempSync(join(tmpdir(), 'vocal-stack-v2-quickstart-'));
+try {
+  cpSync(join(root, 'examples', 'v2-quickstart.ts'), join(quickstartDirectory, 'index.ts'));
+  run(
+    'npm',
+    [
+      'install',
+      '--no-save',
+      '--package-lock=false',
+      '--ignore-scripts',
+      '--no-audit',
+      '--no-fund',
+      tarball,
+    ],
+    quickstartDirectory
+  );
+  run(
+    typescript,
+    [
+      '--noEmit',
+      '--ignoreConfig',
+      '--strict',
+      '--skipLibCheck',
+      '--target',
+      'ES2022',
+      '--module',
+      'NodeNext',
+      '--moduleResolution',
+      'NodeNext',
+      '--lib',
+      'ES2022,DOM',
+      'index.ts',
+    ],
+    quickstartDirectory
+  );
+} finally {
+  rmSync(quickstartDirectory, { recursive: true, force: true });
+}
+
 process.stdout.write('all examples and recipes passed against the packed artifact\n');
