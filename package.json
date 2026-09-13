@@ -1,6 +1,6 @@
 {
   "name": "vocal-stack",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Provider-neutral text, interruption, telemetry, and testing reliability for TypeScript voice pipelines",
   "type": "module",
   "exports": {

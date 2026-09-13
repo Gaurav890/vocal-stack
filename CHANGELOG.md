@@ -1,5 +1,13 @@
 # vocal-stack
 
+## 2.0.1
+
+### Patch Changes
+
+- 7512431: Improve the npm and GitHub documentation with a clearer quick start, package trust signals,
+  provider recipe navigation, and an updated post-release roadmap. Compile the TypeScript quickstart
+  against the packed artifact during release checks.
+
 ## 2.0.0
 
 ### Major Changes
