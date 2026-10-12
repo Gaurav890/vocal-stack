@@ -14,19 +14,16 @@ Speech-safe text · immediate barge-in · heard-text accounting · normalized te
 [![license](https://img.shields.io/npm/l/vocal-stack.svg)](https://github.com/Gaurav890/vocal-stack/blob/main/LICENSE)
 
 [Install in 60 seconds](#quick-start) ·
-[Watch the 20-second overview](https://github.com/Gaurav890/vocal-stack/blob/main/.github/assets/vocal-stack-overview.mp4?raw=1) ·
+[Watch video](https://github.com/user-attachments/assets/ad7e6b0c-5196-4a7b-bf30-2d86a5dad50c) ·
+[Download MP4](https://github.com/Gaurav890/vocal-stack/blob/main/.github/assets/vocal-stack-overview.mp4?raw=true) ·
 [Read the API](https://github.com/Gaurav890/vocal-stack/blob/main/docs/API.md) ·
 [⭐ Star vocal-stack](https://github.com/Gaurav890/vocal-stack)
 
 </div>
 
-<p align="center">
-  <a href="https://github.com/Gaurav890/vocal-stack/blob/main/.github/assets/vocal-stack-overview.mp4?raw=1">
-    <img src="https://raw.githubusercontent.com/Gaurav890/vocal-stack/main/.github/assets/vocal-stack-overview.jpg" width="960" alt="vocal-stack — reliability between the model and the microphone. Click to watch the 20-second overview." />
-  </a>
-</p>
+![vocal-stack — reliability between the model and the microphone](https://raw.githubusercontent.com/Gaurav890/vocal-stack/main/.github/assets/vocal-stack-overview.jpg)
 
-<p align="center"><sub>▶ Click the poster to watch the 20-second overview.</sub></p>
+https://github.com/user-attachments/assets/ad7e6b0c-5196-4a7b-bf30-2d86a5dad50c
 
 ## The short version
 
