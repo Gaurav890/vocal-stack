@@ -1,6 +1,9 @@
+import { countSpeechCharacters } from 'vocal-stack/text';
 import { createVoicePipeline } from 'vocal-stack/turn';
 
 let isRunning = false;
+let activeTurn;
+let interruptRequested = false;
 
 const response = `## Welcome to vocal-stack v2!
 
@@ -28,20 +31,66 @@ function addToOutput(container, text, type) {
   container.appendChild(span);
 }
 
+function setStatus(message, tone = 'idle') {
+  const status = document.getElementById('run-status');
+  status.textContent = message;
+  status.dataset.tone = tone;
+}
+
+function showResult(result) {
+  const metrics = result.metrics;
+  document.getElementById('stat-outcome').textContent = result.outcome;
+  document.getElementById('stat-generated').textContent = metrics.generatedCharacters;
+  document.getElementById('stat-heard').textContent = metrics.acknowledgedCharacters;
+  document.getElementById('stat-ttft').textContent =
+    metrics.timeToFirstInputDeltaMs === undefined
+      ? '—'
+      : `${Math.round(metrics.timeToFirstInputDeltaMs)}ms`;
+  document.getElementById('stat-segments').textContent = metrics.segmentCount;
+  document.getElementById('stat-cues').textContent = metrics.cueRequests;
+  document.getElementById('heard-output').textContent =
+    result.heardText || 'Nothing was confirmed as played.';
+  document.getElementById('stats').style.display = 'grid';
+
+  if (result.outcome === 'completed') {
+    setStatus('Turn completed. Every emitted segment was acknowledged.', 'completed');
+  } else if (result.outcome === 'interrupted') {
+    setStatus(
+      'Turn interrupted immediately. Only acknowledged playback counts as heard.',
+      'interrupted'
+    );
+  } else {
+    setStatus(`Turn failed: ${result.error?.code ?? 'unknown error'}`, 'failed');
+  }
+}
+
+window.interruptPipeline = () => {
+  if (!activeTurn || interruptRequested) return;
+  interruptRequested = true;
+  document.getElementById('interrupt-btn').disabled = true;
+  setStatus('Barge-in requested. Settling the local turn…', 'interrupted');
+  activeTurn.interrupt({ reason: 'demo barge-in' });
+};
+
 window.startPipeline = async () => {
   if (isRunning) return;
   isRunning = true;
 
   const rawOutput = document.getElementById('raw-output');
   const speechOutput = document.getElementById('clean-output');
+  const heardOutput = document.getElementById('heard-output');
   const stats = document.getElementById('stats');
   const startButton = document.getElementById('start-btn');
+  const interruptButton = document.getElementById('interrupt-btn');
   rawOutput.textContent = '';
   speechOutput.textContent = '';
+  heardOutput.textContent = 'Waiting for playback acknowledgements…';
   stats.style.display = 'none';
   startButton.disabled = true;
+  interruptButton.disabled = false;
+  interruptRequested = false;
+  setStatus('Waiting for the first model delta. You can interrupt now.', 'running');
 
-  let cueRequests = 0;
   const pipeline = createVoicePipeline({
     text: { minChars: 24, targetChars: 80, maxChars: 160, maxWaitMs: 250 },
     stallCues: { enabled: true, delayMs: 700, text: 'One moment.' },
@@ -60,18 +109,19 @@ window.startPipeline = async () => {
         turn.recordStage({ stage: 'llm', phase: 'first-output' });
         first = false;
       }
+      setStatus('Streaming model deltas. Interrupt to simulate barge-in.', 'running');
       addToOutput(rawOutput, delta, 'text');
       yield delta;
       await new Promise((resolve) => setTimeout(resolve, 60));
     }
-    turn.recordStage({ stage: 'llm', phase: 'end' });
+    if (!signal.aborted) turn.recordStage({ stage: 'llm', phase: 'end' });
   };
 
   turn = pipeline.startTurn({ id: 'browser-demo', source });
+  activeTurn = turn;
   try {
     for await (const event of turn.events) {
       if (event.type === 'stall.cue.requested') {
-        cueRequests++;
         addToOutput(speechOutput, event.text, 'filler');
       }
       if (event.type === 'speech.segment') {
@@ -79,9 +129,12 @@ window.startPipeline = async () => {
         await new Promise((resolve) => setTimeout(resolve, 80));
         activateStep('step-flow');
         addToOutput(speechOutput, event.segment.text, 'text');
+        setStatus('Acknowledging simulated playback. Interrupt to stop the turn.', 'running');
+        await new Promise((resolve) => setTimeout(resolve, 80));
+        if (interruptRequested) continue;
         turn.acknowledgePlayback({
           segmentId: event.segment.id,
-          charactersPlayed: Array.from(event.segment.text).length,
+          charactersPlayed: countSpeechCharacters(event.segment.text),
           audioMs: 80,
         });
       }
@@ -90,22 +143,15 @@ window.startPipeline = async () => {
     activateStep('step-monitor');
     const result = await turn.result;
     activateStep('step-tts');
-    const metrics = result.metrics;
-    document.getElementById('stat-ttft').textContent =
-      `${Math.round(metrics.timeToFirstInputDeltaMs ?? 0)}ms`;
-    document.getElementById('stat-duration').textContent =
-      `${Math.round(metrics.totalDurationMs)}ms`;
-    document.getElementById('stat-chunks').textContent = metrics.chunkCount;
-    document.getElementById('stat-fillers').textContent = cueRequests;
-    document.getElementById('stat-chars-removed').textContent =
-      response.length - result.heardText.length;
-    document.getElementById('stat-reduction').textContent =
-      `${Math.round((1 - result.heardText.length / response.length) * 100)}%`;
-    stats.style.display = 'grid';
+    showResult(result);
   } catch (error) {
     console.error('Pipeline error:', error);
+    setStatus(`Demo error: ${error instanceof Error ? error.message : String(error)}`, 'failed');
   } finally {
+    activeTurn = undefined;
+    interruptRequested = false;
     startButton.disabled = false;
+    interruptButton.disabled = true;
     isRunning = false;
   }
 };

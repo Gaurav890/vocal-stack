@@ -1,5 +1,9 @@
 # Text Sanitizer Demo
 
+> [!NOTE]
+> This demo covers the deprecated v1 compatibility API. New integrations should start with the
+> [interactive v2 reliability demo](../03-full-pipeline).
+
 Interactive demo showcasing vocal-stack's text sanitization features.
 
 ## What it demonstrates
