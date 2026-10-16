@@ -261,6 +261,7 @@ to connect the package to common voice stacks:
 - [Telemetry and OpenTelemetry](https://github.com/Gaurav890/vocal-stack/blob/main/docs/TELEMETRY.md)
 - [v1 → v2 migration](https://github.com/Gaurav890/vocal-stack/blob/main/docs/MIGRATION.md)
 - [Reproducible benchmarks](https://github.com/Gaurav890/vocal-stack/blob/main/docs/BENCHMARKS.md)
+- [Interactive browser demo](https://stackblitz.com/github/Gaurav890/vocal-stack/tree/main/stackblitz-demos/03-full-pipeline)
 - [Examples](https://github.com/Gaurav890/vocal-stack/tree/main/examples)
 - [Public roadmap](https://github.com/Gaurav890/vocal-stack/blob/main/ROADMAP.md)
 
