@@ -132,6 +132,54 @@
       cursor: not-allowed;
     }
 
+    .button-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .btn-danger {
+      background: #dc2626;
+      color: white;
+    }
+
+    .btn-danger:hover:not(:disabled) {
+      background: #b91c1c;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+    }
+
+    .btn-danger:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .run-status {
+      margin-top: 12px;
+      padding: 12px 16px;
+      border-radius: 8px;
+      background: #f1f5f9;
+      color: #475569;
+      font-weight: 600;
+      text-align: center;
+    }
+
+    .run-status[data-tone='running'] {
+      background: #eff6ff;
+      color: #1d4ed8;
+    }
+
+    .run-status[data-tone='completed'] {
+      background: #ecfdf5;
+      color: #047857;
+    }
+
+    .run-status[data-tone='interrupted'],
+    .run-status[data-tone='failed'] {
+      background: #fef2f2;
+      color: #b91c1c;
+    }
+
     .output-section {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -141,6 +189,10 @@
 
     @media (max-width: 768px) {
       .output-section {
+        grid-template-columns: 1fr;
+      }
+
+      .button-grid {
         grid-template-columns: 1fr;
       }
     }
@@ -229,6 +281,25 @@
       margin: 0;
     }
 
+    .heard-box {
+      background: #f0fdf4;
+      border: 2px solid #bbf7d0;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 25px;
+    }
+
+    .heard-box h3 {
+      color: #166534;
+      font-size: 1em;
+      margin-bottom: 10px;
+    }
+
+    #heard-output {
+      color: #14532d;
+      line-height: 1.6;
+    }
+
     .footer {
       text-align: center;
       color: white;
@@ -245,15 +316,16 @@
 <body>
   <div class="container">
     <div class="header">
-      <h1>🚀 vocal-stack</h1>
-      <p>Full Pipeline Demo - All Three Modules Together</p>
+      <h1>vocal-stack</h1>
+      <p>Interactive voice reliability demo</p>
     </div>
 
     <div class="demo-card">
       <div class="info-box">
         <p>
           <strong>V2 reliability pipeline:</strong> Model deltas flow through incremental normalization,
-          speech segmentation, playback acknowledgement, and privacy-safe telemetry.
+          speech segmentation, playback acknowledgement, and privacy-safe telemetry. Run the full
+          response or interrupt it to see why generated text is not the same as heard text.
         </p>
       </div>
 
@@ -285,48 +357,67 @@
       </div>
 
       <div class="section">
-        <button type="button" class="btn btn-primary" id="start-btn" onclick="startPipeline()">
-          ▶️ Run Complete Pipeline
-        </button>
+        <div class="button-grid">
+          <button type="button" class="btn btn-primary" id="start-btn" onclick="startPipeline()">
+            Run complete turn
+          </button>
+          <button
+            type="button"
+            class="btn btn-danger"
+            id="interrupt-btn"
+            onclick="interruptPipeline()"
+            disabled
+          >
+            Interrupt for barge-in
+          </button>
+        </div>
+        <div class="run-status" id="run-status" role="status" aria-live="polite" data-tone="idle">
+          Ready. Run the turn, then interrupt at any point.
+        </div>
       </div>
 
       <div class="output-section">
         <div class="output-box">
-          <h3>📥 Raw LLM Output (with markdown)</h3>
+          <h3>Raw model deltas</h3>
           <div id="raw-output"></div>
         </div>
         <div class="output-box">
-          <h3>✨ Cleaned TTS Output</h3>
+          <h3>Speakable segments sent to TTS</h3>
           <div id="clean-output"></div>
         </div>
       </div>
 
+      <div class="heard-box">
+        <h3>Confirmed heard text</h3>
+        <div id="heard-output">Run the demo to reconstruct acknowledged playback.</div>
+      </div>
+
       <div class="section">
-        <div class="section-title">📊 Performance Metrics</div>
+        <div class="section-title">Turn result and metrics</div>
         <div class="stats-grid" id="stats" style="display: none;">
+          <div class="stat">
+            <div class="stat-value" id="stat-outcome">—</div>
+            <div class="stat-label">Outcome</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value" id="stat-generated">0</div>
+            <div class="stat-label">Generated characters</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value" id="stat-heard">0</div>
+            <div class="stat-label">Acknowledged characters</div>
+          </div>
           <div class="stat">
             <div class="stat-value" id="stat-ttft">0ms</div>
             <div class="stat-label">First Input Delta</div>
           </div>
           <div class="stat">
-            <div class="stat-value" id="stat-duration">0ms</div>
-            <div class="stat-label">Total Duration</div>
+            <div class="stat-value" id="stat-segments">0</div>
+            <div class="stat-label">Speech segments</div>
           </div>
           <div class="stat">
-            <div class="stat-value" id="stat-chunks">0</div>
-            <div class="stat-label">Chunks Processed</div>
-          </div>
-          <div class="stat">
-            <div class="stat-value" id="stat-fillers">0</div>
-            <div class="stat-label">Cue Requests</div>
-          </div>
-          <div class="stat">
-            <div class="stat-value" id="stat-chars-removed">0</div>
-            <div class="stat-label">Chars Removed</div>
-          </div>
-          <div class="stat">
-            <div class="stat-value" id="stat-reduction">0%</div>
-            <div class="stat-label">Size Reduction</div>
+            <div class="stat-value" id="stat-cues">0</div>
+            <div class="stat-label">Cue requests</div>
           </div>
         </div>
       </div>
@@ -334,7 +425,9 @@
 
     <div class="footer">
       <p>
-        Try vocal-stack: <a href="https://www.npmjs.com/package/vocal-stack" target="_blank">npm install vocal-stack</a>
+        <a href="https://github.com/Gaurav890/vocal-stack" target="_blank">View source</a>
+        ·
+        <a href="https://www.npmjs.com/package/vocal-stack" target="_blank">Install from npm</a>
       </p>
     </div>
   </div>

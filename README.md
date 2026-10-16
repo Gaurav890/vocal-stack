@@ -14,6 +14,7 @@ Speech-safe text · immediate barge-in · heard-text accounting · normalized te
 [![license](https://img.shields.io/npm/l/vocal-stack.svg)](https://github.com/Gaurav890/vocal-stack/blob/main/LICENSE)
 
 [Install in 60 seconds](#quick-start) ·
+[Try the live demo](https://stackblitz.com/github/Gaurav890/vocal-stack/tree/main/stackblitz-demos/03-full-pipeline) ·
 [Watch the 20-second overview](https://github.com/Gaurav890/vocal-stack/blob/main/.github/assets/vocal-stack-overview.mp4?raw=1) ·
 [Read the API](https://github.com/Gaurav890/vocal-stack/blob/main/docs/API.md) ·
 [⭐ Star vocal-stack](https://github.com/Gaurav890/vocal-stack)
@@ -66,6 +67,13 @@ npm install vocal-stack
 
 Requires Node.js 22+. Ships ESM and CommonJS, works in modern browsers, and has **zero runtime
 dependencies**.
+
+## Try it online
+
+[Open the interactive v2 demo](https://stackblitz.com/github/Gaurav890/vocal-stack/tree/main/stackblitz-demos/03-full-pipeline)
+to run a complete voice turn or interrupt it mid-stream—no API key or provider account required.
+It makes model deltas, speakable segments, playback acknowledgements, generated text, and confirmed
+heard text visible in one screen.
 
 ## Quick start
 
@@ -253,6 +261,7 @@ to connect the package to common voice stacks:
 - [Telemetry and OpenTelemetry](https://github.com/Gaurav890/vocal-stack/blob/main/docs/TELEMETRY.md)
 - [v1 → v2 migration](https://github.com/Gaurav890/vocal-stack/blob/main/docs/MIGRATION.md)
 - [Reproducible benchmarks](https://github.com/Gaurav890/vocal-stack/blob/main/docs/BENCHMARKS.md)
+- [Interactive browser demo](https://stackblitz.com/github/Gaurav890/vocal-stack/tree/main/stackblitz-demos/03-full-pipeline)
 - [Examples](https://github.com/Gaurav890/vocal-stack/tree/main/examples)
 - [Public roadmap](https://github.com/Gaurav890/vocal-stack/blob/main/ROADMAP.md)
 
