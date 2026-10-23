@@ -7,6 +7,13 @@ import { graphemeLength, sliceGraphemes } from '../text/graphemes';
 import { IncrementalSpeechNormalizer } from '../text/normalizer';
 import { SpeechSegmenter } from '../text/segmenter';
 import type { SpeechDiagnostic, SpeechSegment, SpeechTextTransform } from '../text/types';
+import type {
+  VoiceTraceConfiguration,
+  VoiceTraceEvent,
+  VoiceTraceEventPayload,
+  VoiceTraceSink,
+  VoiceTraceSinkError,
+} from '../trace/types';
 import { AsyncEventQueue } from './async-queue';
 import type {
   PlaybackAcknowledgement,
@@ -32,6 +39,8 @@ interface ResolvedPipelineOptions {
   readonly sinks: NonNullable<VoicePipelineOptions['telemetry']>['sinks'];
   readonly onSinkError: (failure: TelemetrySinkError) => void;
   readonly maxStoredMetrics: number;
+  readonly traceSinks: readonly VoiceTraceSink[];
+  readonly onTraceSinkError: (failure: VoiceTraceSinkError) => void;
   readonly onDiagnostic?: (diagnostic: SpeechDiagnostic) => void;
 }
 
@@ -69,6 +78,8 @@ class VoiceTurnHandle implements VoiceTurn {
   private cueRequests = 0;
   private lastAcknowledgedSegment = -1;
   private settledResult: VoiceTurnResult | undefined;
+  private readonly traceStartedAt: number;
+  private traceSequence = 0;
 
   constructor(
     public readonly id: string,
@@ -76,7 +87,8 @@ class VoiceTurnHandle implements VoiceTurn {
     private readonly options: ResolvedPipelineOptions,
     private readonly onSettled: (metrics: VoiceTurnMetrics) => void
   ) {
-    this.eventQueue = new AsyncEventQueue(() => this.interrupt({ reason: 'consumer-cancelled' }));
+    this.traceStartedAt = options.clock.monotonicNow();
+    this.eventQueue = new AsyncEventQueue(() => this.handleConsumerCancellation());
     this.events = this.eventQueue;
     this.result = this.resultDeferred.promise;
     this.transforms = options.text?.transforms ?? [];
@@ -101,6 +113,12 @@ class VoiceTurnHandle implements VoiceTurn {
       options.sinks ?? [],
       options.onSinkError
     );
+
+    this.emitTrace({
+      type: 'turn.started',
+      startedAt: options.clock.wallNow(),
+      configuration: this.traceConfiguration(),
+    });
 
     this.scheduleStall();
     queueMicrotask(() => void this.consumeSource());
@@ -165,6 +183,13 @@ class VoiceTurnHandle implements VoiceTurn {
     this.acknowledgements.set(segment.id, acknowledgement.charactersPlayed);
     this.lastAcknowledgedSegment = Math.max(this.lastAcknowledgedSegment, index);
     if (acknowledgement.audioMs !== undefined) this.telemetry.recordFirstAudio();
+    this.emitTrace({
+      type: 'playback.acknowledged',
+      segmentId: segment.id,
+      segmentSequence: segment.sequence,
+      charactersPlayed: acknowledgement.charactersPlayed,
+      ...(acknowledgement.audioMs === undefined ? {} : { audioMs: acknowledgement.audioMs }),
+    });
     const acknowledgedCharacters = this.acknowledgedCharacterCount();
     this.telemetry.setAcknowledgedCharacters(acknowledgedCharacters);
     if (this.settledResult) {
@@ -179,13 +204,30 @@ class VoiceTurnHandle implements VoiceTurn {
 
   interrupt(interruption: VoiceTurnInterruption): void {
     if (this.terminal) return;
+    this.emitTrace({ type: 'turn.interrupted', reason: interruption.reason });
     this.abortController.abort(interruption.reason);
     this.cancelSource();
     this.settle('interrupted', { interruption });
   }
 
+  flushSpeech(): void {
+    if (this.terminal) return;
+    this.stopSegmentTimer();
+    this.emitSegments(this.segmenter.flushTimeout());
+    if (this.segmenter.pendingText) this.scheduleSegmentFlush();
+  }
+
   recordStage(marker: StageMarker): void {
-    if (!this.terminal) this.telemetry.recordStage(marker);
+    if (this.terminal) return;
+    this.telemetry.recordStage(marker);
+    this.emitTrace({
+      type: 'stage.recorded',
+      marker: {
+        stage: marker.stage,
+        phase: marker.phase,
+        ...(marker.operationId === undefined ? {} : { operationId: marker.operationId }),
+      },
+    });
   }
 
   private async consumeSource(): Promise<void> {
@@ -225,7 +267,10 @@ class VoiceTurnHandle implements VoiceTurn {
 
       if (this.terminal) return;
       await this.finishText();
-      if (!this.terminal) this.settle('completed');
+      if (!this.terminal) {
+        this.emitTrace({ type: 'source.completed' });
+        this.settle('completed');
+      }
     } catch (error) {
       if (this.terminal) return;
       const pipelineError =
@@ -235,6 +280,7 @@ class VoiceTurnHandle implements VoiceTurn {
               cause: error,
             });
       this.cancelSource();
+      this.emitTrace({ type: 'source.failed', errorCode: pipelineError.code });
       this.settle('failed', { error: pipelineError });
     }
   }
@@ -251,7 +297,9 @@ class VoiceTurnHandle implements VoiceTurn {
       }
 
       this.generatedText += next.value;
-      this.telemetry.recordInputDelta(graphemeLength(next.value, this.options.text?.locale));
+      const characters = graphemeLength(next.value, this.options.text?.locale);
+      this.telemetry.recordInputDelta(characters);
+      this.emitTrace({ type: 'input.delta', characters, text: next.value });
       const normalized = this.normalizer.write(next.value);
       const transformed = await this.applyTransforms(normalized, false);
       if (this.terminal) return;
@@ -286,6 +334,15 @@ class VoiceTurnHandle implements VoiceTurn {
       if (this.terminal) return;
       this.emittedSegments.push(segment);
       this.telemetry.recordSegment();
+      this.emitTrace({
+        type: 'speech.segment',
+        segmentId: segment.id,
+        segmentSequence: segment.sequence,
+        characters: graphemeLength(segment.text, this.options.text?.locale),
+        boundary: segment.boundary,
+        final: segment.final,
+        text: segment.text,
+      });
       this.eventQueue.push({ type: 'speech.segment', segment });
       this.stopStallTimer();
     }
@@ -310,6 +367,11 @@ class VoiceTurnHandle implements VoiceTurn {
       if (this.options.stallCues.enabled && this.cueRequests < this.options.stallCues.maxPerTurn) {
         this.cueRequests++;
         this.telemetry.recordCueRequest();
+        this.emitTrace({
+          type: 'stall.cue.requested',
+          text: this.options.stallCues.text,
+          cueSequence: this.cueRequests - 1,
+        });
         this.eventQueue.push({
           type: 'stall.cue.requested',
           text: this.options.stallCues.text,
@@ -333,11 +395,14 @@ class VoiceTurnHandle implements VoiceTurn {
   }
 
   private stopTimers(): void {
-    if (this.segmentTimer !== undefined) {
-      this.options.clock.clearTimeout(this.segmentTimer);
-      this.segmentTimer = undefined;
-    }
+    this.stopSegmentTimer();
     this.stopStallTimer();
+  }
+
+  private stopSegmentTimer(): void {
+    if (this.segmentTimer === undefined) return;
+    this.options.clock.clearTimeout(this.segmentTimer);
+    this.segmentTimer = undefined;
   }
 
   private settle(
@@ -372,6 +437,11 @@ class VoiceTurnHandle implements VoiceTurn {
     };
     this.settledResult = result;
     this.eventQueue.push({
+      type: 'turn.ended',
+      outcome,
+      ...(options.error === undefined ? {} : { errorCode: options.error.code }),
+    });
+    this.emitTrace({
       type: 'turn.ended',
       outcome,
       ...(options.error === undefined ? {} : { errorCode: options.error.code }),
@@ -414,6 +484,7 @@ class VoiceTurnHandle implements VoiceTurn {
   private reportDiagnostic(diagnostic: SpeechDiagnostic): void {
     if (this.terminal) return;
     this.diagnostics.push(diagnostic);
+    this.emitTrace({ type: 'turn.diagnostic', diagnostic });
     this.eventQueue.push({ type: 'turn.diagnostic', diagnostic });
     if (!this.options.onDiagnostic) return;
     try {
@@ -430,6 +501,62 @@ class VoiceTurnHandle implements VoiceTurn {
     return new VoicePipelineError(message, 'VOICE_PLAYBACK_ACK_INVALID', {
       context: { turnId: this.id, ...acknowledgement },
     });
+  }
+
+  private handleConsumerCancellation(): void {
+    if (this.terminal) return;
+    this.emitTrace({ type: 'consumer.cancelled' });
+    this.interrupt({ reason: 'consumer-cancelled' });
+  }
+
+  private traceConfiguration(): VoiceTraceConfiguration {
+    return {
+      text: {
+        locale: this.options.text?.locale ?? 'en',
+        mode: this.options.text?.mode ?? 'balanced',
+        minChars: this.options.text?.minChars ?? 24,
+        targetChars: this.options.text?.targetChars ?? 120,
+        maxChars: this.options.text?.maxChars ?? 240,
+        maxWaitMs: this.options.text?.maxWaitMs ?? 250,
+        maxPendingChars: this.options.text?.maxPendingChars ?? 4_096,
+        hasTransforms: (this.options.text?.transforms?.length ?? 0) > 0,
+      },
+      stallCues: {
+        enabled: this.options.stallCues.enabled,
+        delayMs: this.options.stallCues.delayMs,
+        maxPerTurn: this.options.stallCues.maxPerTurn,
+      },
+    };
+  }
+
+  private emitTrace(payload: VoiceTraceEventPayload): void {
+    if (this.options.traceSinks.length === 0) return;
+    const event = {
+      ...payload,
+      turnId: this.id,
+      atMs: Math.max(0, this.options.clock.monotonicNow() - this.traceStartedAt),
+      sequence: this.traceSequence++,
+    } as VoiceTraceEvent;
+    for (const sink of this.options.traceSinks) {
+      try {
+        const recorded = sink.record(event);
+        if (recorded instanceof Promise) {
+          void recorded.catch((error: unknown) =>
+            this.reportTraceSinkError({ error, sink, event })
+          );
+        }
+      } catch (error) {
+        this.reportTraceSinkError({ error, sink, event });
+      }
+    }
+  }
+
+  private reportTraceSinkError(failure: VoiceTraceSinkError): void {
+    try {
+      this.options.onTraceSinkError(failure);
+    } catch {
+      // Error reporting is deliberately isolated from the active turn.
+    }
   }
 }
 
@@ -452,6 +579,8 @@ class DefaultVoicePipeline implements VoicePipeline {
       sinks: options.telemetry?.sinks ?? [],
       onSinkError,
       maxStoredMetrics: options.telemetry?.maxStoredMetrics ?? 100,
+      traceSinks: options.trace?.sinks ?? [],
+      onTraceSinkError: options.trace?.onSinkError ?? (() => {}),
       ...(options.onDiagnostic === undefined ? {} : { onDiagnostic: options.onDiagnostic }),
     };
     if (

@@ -18,6 +18,20 @@ test('interactive demo completes a turn and reports confirmed playback', async (
   const acknowledgedCharacters = Number(await page.locator('#stat-heard').innerText());
   expect(generatedCharacters).toBeGreaterThan(acknowledgedCharacters);
   expect(acknowledgedCharacters).toBeGreaterThan(0);
+
+  await expect(page.getByRole('button', { name: 'Download trace' })).toBeEnabled();
+  await page.getByRole('button', { name: 'Replay last trace' }).click();
+  await expect(page.locator('#replay-output')).toContainText('Replay matched');
+  await expect(page.locator('#replay-output')).toContainText('0 pending timers');
+
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Download trace' }).click();
+  const download = await downloadPromise;
+  const tracePath = await download.path();
+  if (!tracePath) throw new Error('Trace download did not produce a file');
+  await page.locator('#trace-file').setInputFiles(tracePath);
+  await expect(page.locator('#trace-summary')).toContainText('uploaded trace');
+  await expect(page.locator('#replay-output')).toContainText('Trace loaded');
 });
 
 test('interactive demo settles promptly when interrupted during model streaming', async ({

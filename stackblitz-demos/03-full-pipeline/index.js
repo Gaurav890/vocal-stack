@@ -1,9 +1,18 @@
+import { runVoiceScenario, scenarioFromTrace, VirtualClock } from 'vocal-stack/testing';
 import { countSpeechCharacters } from 'vocal-stack/text';
+import {
+  createVoiceTraceRecorder,
+  exportVoiceTraceJson,
+  parseVoiceTraceJson,
+  parseVoiceTraceJsonl,
+} from 'vocal-stack/trace';
 import { createVoicePipeline } from 'vocal-stack/turn';
 
 let isRunning = false;
 let activeTurn;
 let interruptRequested = false;
+let lastTrace;
+let lastResult;
 
 const response = `## Welcome to vocal-stack v2!
 
@@ -64,6 +73,81 @@ function showResult(result) {
   }
 }
 
+function setTraceReady(trace, source = 'recorded') {
+  lastTrace = trace;
+  document.getElementById('download-trace-btn').disabled = false;
+  document.getElementById('replay-trace-btn').disabled = false;
+  document.getElementById('trace-summary').textContent =
+    `${source} trace: ${trace.events.length} events · ${Math.round(trace.durationMs)}ms · ` +
+    `${trace.outcome ?? 'in progress'} · content ${trace.content}`;
+}
+
+window.downloadTrace = () => {
+  if (!lastTrace) return;
+  const url = URL.createObjectURL(
+    new Blob([exportVoiceTraceJson(lastTrace)], { type: 'application/json' })
+  );
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `${lastTrace.turnId}.voice-trace.json`;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+};
+
+window.replayTrace = async () => {
+  if (!lastTrace) return;
+  const output = document.getElementById('replay-output');
+  const replayButton = document.getElementById('replay-trace-btn');
+  replayButton.disabled = true;
+  output.textContent = 'Replaying against a virtual clock…';
+  try {
+    const plan = scenarioFromTrace(lastTrace);
+    const clock = new VirtualClock();
+    const replay = await runVoiceScenario({
+      pipeline: createVoicePipeline({ clock, ...plan.pipelineOptions }),
+      turnId: `${plan.turnId}-replay`,
+      timeline: plan.timeline,
+    });
+    const expectedOutcome = lastTrace.outcome;
+    const outcomeMatches = expectedOutcome === undefined || replay.turn.outcome === expectedOutcome;
+    const heardMatches = !lastResult || replay.turn.heardText === lastResult.heardText;
+    output.textContent =
+      `${outcomeMatches && heardMatches ? 'Replay matched' : 'Replay changed'} · ` +
+      `${replay.turn.outcome} · heard ${replay.turn.metrics.acknowledgedCharacters} characters · ` +
+      `${replay.settledInMs}ms settlement · ${replay.pendingTimerCount} pending timers`;
+    output.dataset.tone = outcomeMatches && heardMatches ? 'completed' : 'failed';
+  } catch (error) {
+    output.textContent = `Replay failed: ${error instanceof Error ? error.message : String(error)}`;
+    output.dataset.tone = 'failed';
+  } finally {
+    replayButton.disabled = false;
+  }
+};
+
+window.loadTraceFile = async (input) => {
+  const file = input.files?.[0];
+  if (!file) return;
+  const output = document.getElementById('replay-output');
+  try {
+    const contents = await file.text();
+    let trace;
+    try {
+      trace = parseVoiceTraceJson(contents);
+    } catch {
+      trace = parseVoiceTraceJsonl(contents);
+    }
+    lastResult = undefined;
+    setTraceReady(trace, 'uploaded');
+    output.textContent = 'Trace loaded. Replay it without calling a model or TTS provider.';
+    output.dataset.tone = 'idle';
+  } catch (error) {
+    output.textContent = `Unable to load trace: ${error instanceof Error ? error.message : String(error)}`;
+    output.dataset.tone = 'failed';
+  } finally {
+    input.value = '';
+  }
+};
+
 window.interruptPipeline = () => {
   if (!activeTurn || interruptRequested) return;
   interruptRequested = true;
@@ -91,9 +175,11 @@ window.startPipeline = async () => {
   interruptRequested = false;
   setStatus('Waiting for the first model delta. You can interrupt now.', 'running');
 
+  const recorder = createVoiceTraceRecorder({ content: 'full' });
   const pipeline = createVoicePipeline({
     text: { minChars: 24, targetChars: 80, maxChars: 160, maxWaitMs: 250 },
     stallCues: { enabled: true, delayMs: 700, text: 'One moment.' },
+    trace: { sinks: [recorder] },
   });
 
   let turn;
@@ -144,6 +230,9 @@ window.startPipeline = async () => {
     const result = await turn.result;
     activateStep('step-tts');
     showResult(result);
+    lastResult = result;
+    const trace = recorder.getTrace(turn.id);
+    if (trace) setTraceReady(trace);
   } catch (error) {
     console.error('Pipeline error:', error);
     setStatus(`Demo error: ${error instanceof Error ? error.message : String(error)}`, 'failed');

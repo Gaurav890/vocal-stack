@@ -28,6 +28,7 @@ import * as text from 'vocal-stack/text';
 import * as turn from 'vocal-stack/turn';
 import * as telemetry from 'vocal-stack/telemetry';
 import * as testing from 'vocal-stack/testing';
+import * as trace from 'vocal-stack/trace';
 const expected = [
   [root, 'createVoicePipeline'],
   [sanitizer, 'SpeechSanitizer'],
@@ -38,6 +39,7 @@ const expected = [
   [turn, 'createVoicePipeline'],
   [telemetry, 'MemoryTelemetrySink'],
   [testing, 'VirtualClock'],
+  [trace, 'createVoiceTraceRecorder'],
 ];
 for (const [module, name] of expected) {
   if (typeof module[name] !== 'function') throw new Error(\`Missing ESM export \${name}\`);
@@ -57,6 +59,7 @@ if (text.normalizeForSpeech('**ESM**.') !== 'ESM.') throw new Error('ESM import 
   [require('vocal-stack/turn'), 'createVoicePipeline'],
   [require('vocal-stack/telemetry'), 'MemoryTelemetrySink'],
   [require('vocal-stack/testing'), 'VirtualClock'],
+  [require('vocal-stack/trace'), 'createVoiceTraceRecorder'],
 ];
 for (const [module, name] of modules) {
   if (typeof module[name] !== 'function') throw new Error(\`Missing CJS export \${name}\`);

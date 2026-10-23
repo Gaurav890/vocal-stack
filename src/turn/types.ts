@@ -8,6 +8,7 @@ import type {
   SpeechTextConfig,
   SpeechTextInput,
 } from '../text/types';
+import type { VoiceTraceConfig } from '../trace/types';
 
 export type { VoiceTurnOutcome } from '../shared';
 
@@ -24,6 +25,7 @@ export interface VoicePipelineOptions {
   readonly text?: SpeechTextConfig;
   readonly stallCues?: StallCueConfig;
   readonly telemetry?: TelemetryConfig;
+  readonly trace?: VoiceTraceConfig;
   readonly clock?: VoiceClock;
   readonly onDiagnostic?: (diagnostic: SpeechDiagnostic) => void;
 }
@@ -85,6 +87,8 @@ export interface VoiceTurn {
   readonly result: Promise<VoiceTurnResult>;
   acknowledgePlayback(acknowledgement: PlaybackAcknowledgement): void;
   interrupt(interruption: VoiceTurnInterruption): void;
+  /** Flushes pending normalized text at the best current boundary. */
+  flushSpeech(): void;
   recordStage(marker: import('../telemetry/types').StageMarker): void;
 }
 

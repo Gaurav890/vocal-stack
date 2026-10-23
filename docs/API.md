@@ -34,8 +34,8 @@ Counts the Unicode graphemes used by playback acknowledgement validation.
 
 ### `createVoicePipeline(options?)`
 
-Creates a concurrency-safe pipeline. Options include `text`, `stallCues`, `telemetry`, `clock`, and
-`onDiagnostic`.
+Creates a concurrency-safe pipeline. Options include `text`, `stallCues`, `telemetry`, `trace`,
+`clock`, and `onDiagnostic`.
 
 ### `pipeline.startTurn({ id, source })`
 
@@ -47,6 +47,7 @@ The returned `VoiceTurn` exposes:
 - `events`: `speech.segment`, `stall.cue.requested`, `turn.diagnostic`, and `turn.ended`;
 - `acknowledgePlayback({ segmentId, charactersPlayed, audioMs? })`;
 - `interrupt({ reason })`;
+- `flushSpeech()` to emit pending text at the best current boundary;
 - `recordStage(marker)`; and
 - `result`.
 
@@ -77,6 +78,35 @@ the stable event schema.
 - `exportTelemetryJsonl(metrics)`
 - `systemClock`
 
+## `vocal-stack/trace`
+
+### `createVoiceTraceRecorder(options?)`
+
+Creates a bounded in-memory `VoiceTraceSink`. Pass it to
+`createVoicePipeline({ trace: { sinks: [recorder] } })`.
+
+Content modes are:
+
+- `none` (default): records structure, timing, character counts, stage markers, acknowledgements,
+  diagnostics, and outcomes without speech text;
+- `redacted`: requires a synchronous `redact(text, context)` function and stores its output; and
+- `full`: stores model deltas, emitted segment text, and cue text unchanged.
+
+The recorder exposes `getTrace(turnId)`, `getTraces()`, and `clear()`. `maxEventsPerTurn` and
+`maxStoredTraces` bound memory. A trace that reaches its event limit is marked `truncated` while
+retaining its terminal `turn.ended` event.
+
+### Trace exports
+
+- `exportVoiceTraceJson(trace)` / `parseVoiceTraceJson(json)`
+- `exportVoiceTraceJsonl(trace)` / `parseVoiceTraceJsonl(jsonl)`
+- `validateVoiceTrace(value)`
+- `VOICE_TRACE_SCHEMA_VERSION`
+
+Trace events use turn-relative monotonic `atMs` values plus an increasing `sequence` for stable
+ordering at equal timestamps. The trace header keeps one wall-clock `startedAt` for external
+correlation.
+
 ## `vocal-stack/testing`
 
 ### `VirtualClock`
@@ -96,3 +126,16 @@ cleanup.
 
 `builtInVoiceScenarios` provides reusable barge-in, stalled-first-response, and source-failure
 timelines.
+
+### `scenarioFromTrace(trace, options?)`
+
+Converts a completed trace into a replay plan containing `turnId`, `timeline`, serializable
+`pipelineOptions`, and `requiresTransforms`. Input deltas must have been recorded with `redacted` or
+`full` content. Truncated traces are rejected unless `allowTruncated: true` is explicitly supplied.
+
+Recorded timeout boundaries become explicit `speech.flush` steps. Automatic timeout flushing is
+disabled for that replay, preventing browser timer jitter from changing segment boundaries.
+
+Spread `pipelineOptions` into a pipeline configured with a `VirtualClock`, then pass the plan's
+timeline to `runVoiceScenario()`. If `requiresTransforms` is true, restore the application's
+original transforms before comparing replay results.

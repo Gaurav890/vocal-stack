@@ -1,8 +1,16 @@
 # Public roadmap
 
-`vocal-stack` 2.0.0 is the current stable release. Near-term work is focused on proving the API in
+`vocal-stack` 2.0.1 is the current stable release. Near-term work is focused on proving the API in
 real applications, tightening documentation, and collecting integration evidence before expanding
 the core.
+
+## In development: trace-to-scenario replay
+
+- Record versioned, provider-neutral turn timelines with speech content disabled by default.
+- Export and import portable JSON and JSONL traces.
+- Convert opted-in redacted or full-content traces into deterministic virtual-clock scenarios.
+- Demonstrate record, download, upload, and replay in the browser without provider calls.
+- Keep trace storage bounded and isolate trace sink failures from active turns.
 
 ## Now: release validation
 
@@ -11,6 +19,7 @@ the core.
 - Run the package in three external TypeScript voice projects and collect structured feedback.
 - Confirm browser behavior in downstream bundlers, not only the repository smoke fixture.
 - Document integration problems as reproducible scenarios or chunk-boundary fixtures.
+- Dogfood trace-to-scenario conversion on failures from external integrations.
 
 ## Next: contributor and release experience
 

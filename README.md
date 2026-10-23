@@ -4,7 +4,7 @@
 
 **Reliability between streaming model text and the microphone.**
 
-Speech-safe text · immediate barge-in · heard-text accounting · normalized telemetry · deterministic tests
+Speech-safe text · immediate barge-in · heard-text accounting · normalized telemetry · incident replay
 
 [![npm version](https://img.shields.io/npm/v/vocal-stack.svg)](https://www.npmjs.com/package/vocal-stack)
 [![npm downloads](https://img.shields.io/npm/dm/vocal-stack.svg)](https://www.npmjs.com/package/vocal-stack)
@@ -40,7 +40,7 @@ model deltas → vocal-stack → speech segments → your TTS → playback ackno
 
 It normalizes and segments streaming text, settles turns immediately on barge-in, reconstructs the
 text confirmed as played, records provider-neutral latency metrics, and makes voice failures
-repeatable in tests.
+repeatable in tests—including failures captured from a real turn.
 
 It is **not** another voice-agent framework. Bring your own model, VAD, STT, TTS, transport, and
 orchestration.
@@ -54,6 +54,7 @@ orchestration.
 | Barge-in that settles even when upstream ignores cancellation | **Yes** |
 | A record of what was generated versus what was actually heard | **Yes** |
 | Deterministic stall, interruption, and failure tests | **Yes** |
+| A portable trace that turns a production failure into a regression test | **Yes** |
 | A VAD, STT/TTS client, WebRTC transport, or telephony platform | No—keep your existing provider or framework |
 
 ## Install
@@ -70,7 +71,8 @@ dependencies**.
 [Open the interactive v2 demo](https://stackblitz.com/github/Gaurav890/vocal-stack/tree/main/stackblitz-demos/03-full-pipeline)
 to run a complete voice turn or interrupt it mid-stream—no API key or provider account required.
 It makes model deltas, speakable segments, playback acknowledgements, generated text, and confirmed
-heard text visible in one screen.
+heard text visible in one screen. Download a completed or interrupted turn as a versioned trace,
+then replay it locally against a virtual clock without calling a provider.
 
 ## Quick start
 
@@ -136,6 +138,7 @@ cancellation.
 | Generated text is treated as heard text | Reconstructs heard text only from monotonic playback acknowledgements |
 | Providers report incompatible lifecycle metrics | Normalizes stage markers and derived latency metrics with monotonic timing |
 | Stall and failure tests depend on real time | Runs declarative scenarios against a virtual clock |
+| A production-only timing bug cannot be reproduced | Records the event timeline and converts it into a deterministic scenario |
 
 ## Use only the layer you need
 
@@ -147,6 +150,7 @@ Every stable v2 capability has its own entry point. Root imports are also suppor
 | `vocal-stack/turn` | Turn lifecycle, interruption, and playback acknowledgement |
 | `vocal-stack/telemetry` | Stage markers, metrics, sinks, and JSON/JSONL export |
 | `vocal-stack/testing` | Virtual time, scenario execution, fixtures, and assertions |
+| `vocal-stack/trace` | Privacy-safe turn recording and versioned JSON/JSONL traces |
 
 The v1 entry points—`vocal-stack/sanitizer`, `vocal-stack/flow`, and
 `vocal-stack/monitor`—remain available as deprecated compatibility APIs throughout v2.
@@ -241,6 +245,54 @@ expectVoiceScenario(scenario)
 Timeline steps also cover source completion/error, stage markers, consumer cancellation, stalls,
 and playback acknowledgements. Reusable barge-in, stalled-response, and source-failure fixtures are
 included.
+
+### Turn a real failure into a test
+
+```ts
+import {
+  expectVoiceScenario,
+  runVoiceScenario,
+  scenarioFromTrace,
+  VirtualClock,
+} from 'vocal-stack/testing';
+import { createVoiceTraceRecorder, exportVoiceTraceJson } from 'vocal-stack/trace';
+import { createVoicePipeline } from 'vocal-stack/turn';
+
+const recorder = createVoiceTraceRecorder({
+  content: 'redacted',
+  // Preserve punctuation and grapheme counts so partial playback remains comparable.
+  redact: (text) => text.replace(/\b\d{4,}\b/gu, (value) => 'x'.repeat(value.length)),
+});
+
+const livePipeline = createVoicePipeline({
+  trace: { sinks: [recorder] },
+});
+
+// Run the live turn, including playback acknowledgements and possible interruption.
+const trace = recorder.getTrace('turn-123');
+if (!trace) throw new Error('Trace not found');
+
+const incidentJson = exportVoiceTraceJson(trace);
+// Write incidentJson to your existing logs or incident store.
+
+const replayPlan = scenarioFromTrace(trace);
+const clock = new VirtualClock();
+const replay = await runVoiceScenario({
+  pipeline: createVoicePipeline({ clock, ...replayPlan.pipelineOptions }),
+  turnId: replayPlan.turnId,
+  timeline: replayPlan.timeline,
+});
+
+expectVoiceScenario(replay)
+  .toHaveOutcome('interrupted')
+  .toHaveNoPendingTimers();
+```
+
+`createVoiceTraceRecorder()` stores timing, counts, boundaries, stages, acknowledgements, and
+outcomes but **no speech text by default**. Choose `content: 'redacted'` with your own redactor or
+explicitly choose `content: 'full'` when exact delta replay is appropriate. Per-turn event limits
+and bounded in-memory history prevent unbounded trace storage. The schema is versioned, and both
+JSON and JSONL import/export are available.
 
 ## Provider recipes
 

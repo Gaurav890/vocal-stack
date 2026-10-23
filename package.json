@@ -83,6 +83,16 @@
         "types": "./dist/testing/index.d.cts",
         "default": "./dist/testing/index.cjs"
       }
+    },
+    "./trace": {
+      "import": {
+        "types": "./dist/trace/index.d.ts",
+        "default": "./dist/trace/index.js"
+      },
+      "require": {
+        "types": "./dist/trace/index.d.cts",
+        "default": "./dist/trace/index.cjs"
+      }
     }
   },
   "main": "./dist/index.cjs",
@@ -151,12 +161,12 @@
     "@changesets/cli": "^3.0.2",
     "@playwright/test": "^1.63.0",
     "@types/node": "^22.20.2",
-    "@vitest/coverage-v8": "^5.0.0",
+    "@vitest/coverage-v8": "^5.0.5",
     "ai": "^7.0.99",
     "publint": "^0.3.24",
     "tsup": "^8.5.1",
     "typescript": "^6.0.3",
     "vite": "^8.3.0",
-    "vitest": "^5.0.0"
+    "vitest": "^5.0.5"
   }
 }

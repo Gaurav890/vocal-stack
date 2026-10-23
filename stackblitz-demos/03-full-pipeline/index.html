@@ -154,6 +154,62 @@
       cursor: not-allowed;
     }
 
+    .btn-secondary {
+      background: #0f172a;
+      color: white;
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      background: #1e293b;
+      transform: translateY(-2px);
+    }
+
+    .btn-secondary:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .trace-actions {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 15px;
+    }
+
+    .file-button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .file-button input {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+    }
+
+    .trace-output {
+      margin-top: 12px;
+      padding: 12px 16px;
+      border-radius: 8px;
+      background: #f8fafc;
+      color: #475569;
+      font-family: 'Monaco', 'Courier New', monospace;
+      font-size: 13px;
+    }
+
+    .trace-output[data-tone='completed'] {
+      background: #ecfdf5;
+      color: #047857;
+    }
+
+    .trace-output[data-tone='failed'] {
+      background: #fef2f2;
+      color: #b91c1c;
+    }
+
     .run-status {
       margin-top: 12px;
       padding: 12px 16px;
@@ -193,6 +249,10 @@
       }
 
       .button-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .trace-actions {
         grid-template-columns: 1fr;
       }
     }
@@ -390,6 +450,48 @@
       <div class="heard-box">
         <h3>Confirmed heard text</h3>
         <div id="heard-output">Run the demo to reconstruct acknowledged playback.</div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Record once, replay forever</div>
+        <div class="info-box">
+          <p id="trace-summary">
+            Complete or interrupt a turn to create a versioned trace. This demo opts into mock text;
+            production recorders omit speech content by default.
+          </p>
+        </div>
+        <div class="trace-actions">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            id="download-trace-btn"
+            onclick="downloadTrace()"
+            disabled
+          >
+            Download trace
+          </button>
+          <button
+            type="button"
+            class="btn btn-secondary"
+            id="replay-trace-btn"
+            onclick="replayTrace()"
+            disabled
+          >
+            Replay last trace
+          </button>
+          <label class="btn btn-secondary file-button" for="trace-file">
+            Upload trace
+            <input
+              id="trace-file"
+              type="file"
+              accept=".json,.jsonl,application/json"
+              onchange="loadTraceFile(this)"
+            >
+          </label>
+        </div>
+        <div class="trace-output" id="replay-output" data-tone="idle" aria-live="polite">
+          A replay uses virtual time and makes no provider calls.
+        </div>
       </div>
 
       <div class="section">

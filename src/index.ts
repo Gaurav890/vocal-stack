@@ -56,4 +56,5 @@ export * from './telemetry';
 export * from './testing';
 // V2 reliability APIs
 export * from './text';
+export * from './trace';
 export * from './turn';
