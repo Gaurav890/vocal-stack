@@ -10,6 +10,7 @@ export default defineConfig({
     'turn/index': 'src/turn/index.ts',
     'telemetry/index': 'src/telemetry/index.ts',
     'testing/index': 'src/testing/index.ts',
+    'trace/index': 'src/trace/index.ts',
   },
   format: ['esm', 'cjs'],
   dts: true,

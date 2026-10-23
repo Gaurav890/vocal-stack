@@ -9,7 +9,7 @@
     "build": "vite build"
   },
   "dependencies": {
-    "vocal-stack": "^2.0.1"
+    "vocal-stack": "file:../.."
   },
   "devDependencies": {
     "vite": "^5.0.0"

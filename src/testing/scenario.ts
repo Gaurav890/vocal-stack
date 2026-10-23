@@ -6,6 +6,7 @@ import { VirtualClock } from './virtual-clock';
 export type VoiceScenarioStep =
   | { readonly atMs: number; readonly type: 'delta'; readonly text: string }
   | { readonly atMs: number; readonly type: 'stall' }
+  | { readonly atMs: number; readonly type: 'speech.flush' }
   | { readonly atMs: number; readonly type: 'source.complete' }
   | { readonly atMs: number; readonly type: 'source.error'; readonly error: unknown }
   | { readonly atMs: number; readonly type: 'stage'; readonly marker: StageMarker }
@@ -148,6 +149,9 @@ export async function runVoiceScenario(scenario: VoiceScenario): Promise<VoiceSc
           source.push(step.text);
           break;
         case 'stall':
+          break;
+        case 'speech.flush':
+          turn.flushSpeech();
           break;
         case 'source.complete':
           source.complete();

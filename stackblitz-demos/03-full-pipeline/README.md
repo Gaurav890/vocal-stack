@@ -20,6 +20,11 @@ barge-in** while deltas are arriving to compare:
 The same screen shows incremental Markdown and URL normalization, a pre-speech cue request,
 provider-neutral turn metrics, and the distinct `completed` and `interrupted` outcomes.
 
+After either outcome, use **Download trace** to save the versioned event timeline or **Replay last
+trace** to reproduce it immediately against a virtual clock. **Upload trace** accepts JSON and JSONL
+files from another run. Replay makes no model, TTS, or network calls. The demo opts into its public
+mock text; production trace recording omits speech text by default.
+
 ## Run locally
 
 ```sh
