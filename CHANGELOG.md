@@ -1,5 +1,13 @@
 # vocal-stack
 
+## 2.1.0
+
+### Minor Changes
+
+- 4b05139: Add privacy-safe, versioned voice trace recording with JSON/JSONL export and deterministic
+  trace-to-scenario replay. Extend the interactive browser demo with trace download, upload, and
+  virtual-clock replay.
+
 ## 2.0.1
 
 ### Patch Changes
